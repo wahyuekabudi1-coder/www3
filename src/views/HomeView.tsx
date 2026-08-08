@@ -616,7 +616,7 @@ export default function HomeView() {
       </section>
 
       {/* 3. OUR SERVICES */}
-      <section className="py-10 md:py-14 lg:py-16 bg-slate-950 text-slate-100 relative border-t border-b border-slate-900 overflow-hidden">
+      <section className="py-10 md:py-14 lg:py-16 bg-[#1c3830] text-slate-100 relative border-t border-b border-[#2a5247] overflow-hidden">
         {/* Subtle glowing cosmic gradients in the background */}
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
@@ -631,14 +631,14 @@ export default function HomeView() {
             <h2 className="text-2xl sm:text-4.5xl font-black text-white tracking-tight leading-none mt-2">
               Layanan Transportasi Premium
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto font-medium">
+            <p className="text-xs sm:text-sm text-emerald-100/80 max-w-xl mx-auto font-medium">
               Layanan transportasi profesional dan paket perjalanan wisata yang dirancang khusus untuk kenyamanan Anda di Jawa Timur.
             </p>
             <div className="h-1 w-20 bg-gradient-to-r from-amber-500 to-amber-600 mx-auto rounded-full mt-3" />
           </div>
 
           {/* Interactive Circular Orbit Selection Panel (Sleek Celestial System Layout) */}
-          <div className="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-6 sm:p-10 mb-8 shadow-2xl relative overflow-hidden backdrop-blur-sm">
+          <div className="bg-[#203c34]/80 border border-[#315B4F] rounded-3xl p-6 sm:p-10 mb-8 shadow-2xl relative overflow-hidden backdrop-blur-sm">
             <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 to-transparent pointer-events-none" />
             
             <div className="text-center space-y-1 mb-2">
@@ -1401,13 +1401,13 @@ export default function HomeView() {
       </section>
 
       {/* SECTION BERLANGGANAN / NEWSLETTER SUBSCRIPTION */}
-      <section className="py-16 sm:py-20 bg-neutral-900 border-t border-neutral-800 text-white relative overflow-hidden">
+      <section className="py-16 sm:py-20 bg-[#315B4F] border-t border-[#467b6b] text-white relative overflow-hidden">
         {/* Decorative background glow */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 border border-neutral-700/60 rounded-3xl p-8 sm:p-12 lg:p-16 shadow-2xl relative overflow-hidden">
+          <div className="bg-gradient-to-br from-[#203c34]/90 to-[#182e28]/90 border border-[#467b6b] rounded-3xl p-8 sm:p-12 lg:p-16 shadow-2xl relative overflow-hidden">
             {/* Background pattern accent */}
             <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-5 pointer-events-none hidden lg:block bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:16px_16px]" />
 
@@ -1423,21 +1423,21 @@ export default function HomeView() {
                   Berlangganan &amp; Dapatkan Diskon Wisata Spesial!
                 </h2>
 
-                <p className="text-neutral-300 text-xs sm:text-sm leading-relaxed max-w-xl mx-auto lg:mx-0">
+                <p className="text-emerald-100 text-xs sm:text-sm leading-relaxed max-w-xl mx-auto lg:mx-0">
                   Daftarkan email Anda sekarang untuk menerima info promo paket wisata Bromo &amp; Ijen, diskon khusus sewa mobil, serta voucher potongan harga eksklusif langsung di inbox Anda.
                 </p>
 
                 {/* Benefits List */}
-                <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs font-semibold text-neutral-300">
-                  <div className="flex items-center gap-2 bg-neutral-800/80 border border-neutral-700/50 px-3.5 py-2 rounded-xl">
+                <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs font-semibold text-emerald-100">
+                  <div className="flex items-center gap-2 bg-[#203c34]/80 border border-[#315B4F] px-3.5 py-2 rounded-xl">
                     <CheckCircle2 className="h-4 w-4 text-amber-400 shrink-0" />
                     <span>Diskon Eksklusif s/d 20%</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-neutral-800/80 border border-neutral-700/50 px-3.5 py-2 rounded-xl">
+                  <div className="flex items-center gap-2 bg-[#203c34]/80 border border-[#315B4F] px-3.5 py-2 rounded-xl">
                     <CheckCircle2 className="h-4 w-4 text-amber-400 shrink-0" />
                     <span>Panduan Wisata Gratis</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-neutral-800/80 border border-neutral-700/50 px-3.5 py-2 rounded-xl">
+                  <div className="flex items-center gap-2 bg-[#203c34]/80 border border-[#315B4F] px-3.5 py-2 rounded-xl">
                     <CheckCircle2 className="h-4 w-4 text-amber-400 shrink-0" />
                     <span>Tanpa Spam &amp; Bebas Batal</span>
                   </div>
@@ -1446,7 +1446,7 @@ export default function HomeView() {
 
               {/* Right Column: Subscription Form */}
               <div className="lg:col-span-5">
-                <div className="bg-neutral-900/90 border border-neutral-700/80 rounded-2xl p-6 sm:p-8 shadow-xl">
+                <div className="bg-[#182e28]/90 border border-[#315B4F] rounded-2xl p-6 sm:p-8 shadow-xl">
                   {isSubscribed ? (
                     <div className="text-center py-6 space-y-3">
                       <div className="w-14 h-14 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-lg">

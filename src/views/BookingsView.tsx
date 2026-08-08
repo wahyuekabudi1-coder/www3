@@ -197,7 +197,7 @@ export default function BookingsView() {
   };
 
   return (
-    <div id="bookings-view" className="bg-neutral-950 text-white min-h-screen pt-32 pb-16 relative">
+    <div id="bookings-view" className="bg-[#1c3830] text-white min-h-screen pt-32 pb-16 relative">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         
         {/* Banner: Config Status or Demo Alert */}
@@ -244,13 +244,13 @@ export default function BookingsView() {
         {/* Boarding Tickets Listing */}
         {localBookings.length === 0 ? (
           /* Empty State */
-          <div className="bg-neutral-900 border border-white/5 rounded-3xl p-12 text-center space-y-6 max-w-md mx-auto">
+          <div className="bg-[#203c34] border border-[#315B4F] rounded-3xl p-12 text-center space-y-6 max-w-md mx-auto">
             <div className="p-4 bg-white/5 border border-white/10 rounded-full w-fit mx-auto text-neutral-400">
               <Compass className="h-8 w-8 animate-spin-slow" />
             </div>
             <div className="space-y-1.5">
               <h3 className="font-bold text-lg text-white">No Active Reservations</h3>
-              <p className="text-xs text-neutral-400 leading-relaxed">
+              <p className="text-xs text-emerald-100/80 leading-relaxed">
                 You haven't booked any private transportation or tours yet. Explore our premium packages to begin!
               </p>
             </div>
@@ -270,11 +270,11 @@ export default function BookingsView() {
               return (
                 <div
                   key={booking.id}
-                  className="relative bg-neutral-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:grid md:grid-cols-12"
+                  className="relative bg-[#203c34] border border-[#315B4F] rounded-3xl overflow-hidden shadow-2xl flex flex-col md:grid md:grid-cols-12"
                 >
                   {/* Boarding pass circular ticket cuts (left and right for desktop) */}
-                  <div className="hidden md:block absolute left-[75%] top-0 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-neutral-950 rounded-full border border-white/10 z-10" />
-                  <div className="hidden md:block absolute left-[75%] bottom-0 -translate-x-1/2 translate-y-1/2 w-6 h-6 bg-neutral-950 rounded-full border border-white/10 z-10" />
+                  <div className="hidden md:block absolute left-[75%] top-0 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-[#1c3830] rounded-full border border-[#315B4F] z-10" />
+                  <div className="hidden md:block absolute left-[75%] bottom-0 -translate-x-1/2 translate-y-1/2 w-6 h-6 bg-[#1c3830] rounded-full border border-[#315B4F] z-10" />
 
                   {/* Left Section - Ride/Tour specifications (Col 9) */}
                   <div className="p-6 md:p-8 md:col-span-9 space-y-6">
@@ -436,7 +436,7 @@ export default function BookingsView() {
                   </div>
 
                   {/* Right Section - Boarding Ticket QR Code Display (Col 3) */}
-                  <div className="p-6 md:p-8 md:col-span-3 bg-neutral-950 flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-white/10 md:border-dashed text-center space-y-4">
+                  <div className="p-6 md:p-8 md:col-span-3 bg-[#182e28] flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-[#315B4F] md:border-dashed text-center space-y-4">
                     
                     {/* Mock Barcode / QR Styling */}
                     <div className="bg-white p-3.5 rounded-2xl shadow-xl hover:scale-105 transition-transform duration-300">

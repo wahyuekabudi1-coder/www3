@@ -254,10 +254,10 @@ export default function Footer() {
         </div>
  
         {/* 2. SECURE PAYMENT SEGMENT (Above Copyright) */}
-        <div className="bg-neutral-950 text-white py-4 px-6 rounded-2xl border border-neutral-900/80 my-6 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 max-w-3xl mx-auto w-full">
+        <div className="bg-[#315B4F] text-white py-4 px-6 rounded-2xl border border-[#467b6b] my-6 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 max-w-3xl mx-auto w-full">
           {/* Label + Badge Container */}
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <span className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-400 font-sans shrink-0">
+            <span className="text-[9px] font-extrabold uppercase tracking-widest text-emerald-100 font-sans shrink-0">
               PAYMENT METHODS
             </span>
             {/* Cards Row */}
@@ -307,14 +307,14 @@ export default function Footer() {
           </div>
 
           {/* Secure & Licensed Badge Container */}
-          <div className="inline-flex items-center gap-2.5 bg-neutral-900 border border-neutral-800/80 rounded-full px-3.5 py-1.5 text-[9px] sm:text-[10px] text-neutral-400 font-semibold select-none shadow-inner shrink-0">
+          <div className="inline-flex items-center gap-2.5 bg-[#203c34] border border-[#3e6f62] rounded-full px-3.5 py-1.5 text-[9px] sm:text-[10px] text-emerald-100 font-semibold select-none shadow-inner shrink-0">
             <div className="flex items-center gap-1.5 hover:text-white transition-colors duration-200">
-              <ShieldCheck className="h-3.5 w-3.5 text-neutral-400" />
+              <ShieldCheck className="h-3.5 w-3.5 text-amber-300" />
               <span>Secure</span>
             </div>
-            <div className="h-3 w-[1px] bg-neutral-800" />
+            <div className="h-3 w-[1px] bg-[#315B4F]" />
             <div className="flex items-center gap-1.5 hover:text-white transition-colors duration-200">
-              <FileText className="h-3.5 w-3.5 text-neutral-400" />
+              <FileText className="h-3.5 w-3.5 text-amber-300" />
               <span>Licensed</span>
             </div>
           </div>

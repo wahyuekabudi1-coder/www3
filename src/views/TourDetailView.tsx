@@ -7,6 +7,9 @@ import {
   Coffee, Sunrise, Utensils, Bed, Sparkles, Lock, Unlock, Maximize2, Eye, Minimize2, ChevronLeft, ChevronRight, Image as ImageIcon, Globe
 } from 'lucide-react';
 import CheckoutModal from '../components/CheckoutModal';
+import BookingForm from '../sharetour/components/BookingForm';
+import BookingSuccess from '../sharetour/components/BookingSuccess';
+import { Trip, Batch, Booking } from '../sharetour/types';
 import { motion, AnimatePresence } from 'motion/react';
 import CustomerReviewsSection from '../components/CustomerReviewsSection';
 
@@ -800,6 +803,7 @@ export default function TourDetailView({ tourId, onBack }: TourDetailViewProps) 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
   const [isAvailabilitySheetOpen, setIsAvailabilitySheetOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('01:00 AM');
@@ -868,6 +872,77 @@ export default function TourDetailView({ tourId, onBack }: TourDetailViewProps) 
   ];
 
   const selectedTier = packageTiers.find(t => t.id === selectedTierId) || packageTiers[0];
+
+  // Full-Page Checkout & Success Flow (Identical to Share Tour)
+  if (createdBooking) {
+    return (
+      <div className="pt-28 pb-16 min-h-screen bg-[#F8FAF9]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <BookingSuccess
+            booking={createdBooking}
+            onNavigateToTrips={() => {
+              setCreatedBooking(null);
+              setIsBookingOpen(false);
+              onBack();
+            }}
+            onNavigateToCheckStatus={(code, email) => {
+              setCreatedBooking(null);
+              setIsBookingOpen(false);
+              setPage('bookings');
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (isBookingOpen) {
+    const shareTrip: Trip = {
+      id: tour.id,
+      title: tour.name,
+      slug: tour.id,
+      location: tour.location,
+      duration: tour.duration,
+      description: tour.description,
+      coverImage: tour.images && tour.images.length > 0 ? tour.images[0] : tour.image,
+      included: tour.highlights || [],
+      excluded: tour.exclusions || [],
+      itinerary: [],
+      startingPrice: selectedTier.priceIDR,
+      wnaStartingPrice: selectedTier.priceIDR,
+      price: selectedTier.priceIDR,
+      wnaPrice: selectedTier.priceIDR
+    };
+
+    const shareBatch: Batch = {
+      id: `batch-${tour.id}-${selectedDate || 'today'}`,
+      tripId: tour.id,
+      departureDate: selectedDate || new Date().toISOString().split('T')[0],
+      quota: 20,
+      availableSeats: 20,
+      price: selectedTier.priceIDR,
+      wnaPrice: selectedTier.priceIDR,
+      status: 'Open'
+    };
+
+    const mappedNationality: 'WNI' | 'WNA_CHINA' | 'WNA_EUROPE' = 
+      selectedTier.id === 'WNA_CHINA' ? 'WNA_CHINA' : 
+      selectedTier.id === 'WNA_EUROPE' ? 'WNA_EUROPE' : 'WNI';
+
+    return (
+      <div className="pt-28 pb-16 min-h-screen bg-[#F8FAF9]">
+        <BookingForm
+          trip={shareTrip}
+          batch={shareBatch}
+          nationalityType={mappedNationality}
+          onBack={() => setIsBookingOpen(false)}
+          onSuccess={(b) => {
+            setCreatedBooking(b);
+          }}
+        />
+      </div>
+    );
+  }
 
   const monthNamesIndo = [
     'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
@@ -1796,27 +1871,6 @@ export default function TourDetailView({ tourId, onBack }: TourDetailViewProps) 
           serviceName={tour.name} 
         />
       </div>
-
-      {/* checkout Modal Portal */}
-      {isBookingOpen && (
-        <CheckoutModal
-          isOpen={isBookingOpen}
-          onClose={() => setIsBookingOpen(false)}
-          serviceType="tour"
-          serviceName={tour.name}
-          basePriceUSD={selectedTier.priceUSD}
-          basePriceIDR={selectedTier.priceIDR}
-          initialDetails={{
-            date: selectedDate,
-            time: selectedTime,
-            guests: guestCount,
-            tourId: tour.id,
-            packageTier: selectedTier.name,
-            nationalityType: selectedTier.id,
-            pickupLocation: 'Hotel Lobby / Airport Arrival'
-          }}
-        />
-      )}
 
       {/* Sticky Floating Bottom Action Bar */}
       {!isBookingOpen && (

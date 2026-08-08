@@ -21,11 +21,11 @@ export default function PrivacyModal() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="relative w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl cursor-default overflow-hidden flex flex-col max-h-[85vh]"
+          className="relative w-full max-w-3xl bg-[#203c34] border border-[#315B4F] rounded-3xl shadow-2xl cursor-default overflow-hidden flex flex-col max-h-[85vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-6 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900/60 backdrop-blur-sm relative">
+          <div className="p-6 border-b border-[#315B4F] flex items-center justify-between shrink-0 bg-[#182e28] backdrop-blur-sm relative">
             <div className="absolute top-0 left-10 w-32 h-[1px] bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">

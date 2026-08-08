@@ -197,10 +197,10 @@ export default function CheckoutModal({
       <div className="fixed inset-0 cursor-default" onClick={onClose} />
 
       {/* Main Container */}
-      <div className="relative bg-neutral-900 border border-white/10 rounded-3xl w-full max-w-2xl shadow-2xl z-10 flex flex-col my-auto">
+      <div className="relative bg-[#203c34] border border-[#315B4F] rounded-3xl w-full max-w-2xl shadow-2xl z-10 flex flex-col my-auto text-white">
         
         {/* Header */}
-        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-neutral-950/40">
+        <div className="p-6 border-b border-[#315B4F] flex items-center justify-between bg-[#182e28]">
           <div className="flex items-center space-x-2.5">
             <div className="p-1.5 bg-amber-500/10 rounded-lg text-amber-400">
               <ShieldCheck className="h-5 w-5" />
@@ -623,10 +623,10 @@ export default function CheckoutModal({
                 </div>
 
                 {/* Digital Ticket display */}
-                <div className="bg-neutral-950 border border-white/10 rounded-2xl p-6 text-left max-w-md mx-auto relative overflow-hidden">
+                <div className="bg-[#182e28] border border-[#315B4F] rounded-2xl p-6 text-left max-w-md mx-auto relative overflow-hidden">
                   {/* Decorative Ticket Cuts */}
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-neutral-900 rounded-r-full border-r border-white/10" />
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-neutral-900 rounded-l-full border-l border-white/10" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-[#203c34] rounded-r-full border-r border-[#315B4F]" />
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-[#203c34] rounded-l-full border-l border-[#315B4F]" />
                   
                   <div className="flex justify-between items-start border-b border-white/5 pb-4 mb-4">
                     <div>

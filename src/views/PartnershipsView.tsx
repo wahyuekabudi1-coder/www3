@@ -195,7 +195,7 @@ export default function PartnershipsView() {
   };
 
   return (
-    <div className="bg-neutral-900 min-h-screen text-neutral-100 pb-24 pt-28">
+    <div className="bg-[#1c3830] min-h-screen text-neutral-100 pb-24 pt-28">
       {/* Banner / Hero Header */}
       <section className="relative overflow-hidden mb-12">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl" />
