@@ -5640,7 +5640,7 @@ export default function AdminView() {
           <div className="space-y-6 animate-fade-in">
             <div>
               <h3 className="text-base font-black uppercase tracking-wider font-mono text-amber-500">PAYMENT &amp; TRANSACTION AUDIT</h3>
-              <p className={`text-xs ${theme.textSecondary}`}>Pelacakan mutasi masuk, webhook status Midtrans, dan verifikasi manual finansial {moduleName}.</p>
+              <p className={`text-xs ${theme.textSecondary}`}>Pelacakan mutasi masuk, webhook status ArtoPay, dan verifikasi manual finansial {moduleName}.</p>
             </div>
 
             <div className={`${theme.card} border rounded-2xl p-6 space-y-4`}>
@@ -5649,9 +5649,9 @@ export default function AdminView() {
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               </h4>
               <div className="space-y-2.5 font-mono text-[10px] bg-neutral-950 p-4 rounded-xl border border-neutral-850 text-neutral-400">
-                <div className="text-emerald-400">[2026-07-11 21:10] MIDTRANS-POST: payload signature key validated for order-121. Status: settled.</div>
+                <div className="text-emerald-400">[2026-07-11 21:10] ARTOPAY-POST: payload signature key validated for order-121. Status: settled.</div>
                 <div className="text-neutral-500">[2026-07-11 21:12] SYSTEM: DB update succeeded. Flagged booking as PAID.</div>
-                <div className="text-amber-400">[2026-07-11 21:14] MIDTRANS-POST: settlement webhook received for order-122. Processing...</div>
+                <div className="text-amber-400">[2026-07-11 21:14] ARTOPAY-POST: settlement webhook received for order-122. Processing...</div>
               </div>
             </div>
 
@@ -5669,7 +5669,7 @@ export default function AdminView() {
                 </thead>
                 <tbody className={`divide-y ${theme.borderSubtle}`}>
                   {[
-                    { date: '2026-07-11 21:05', inv: 'INV-CR-90412', method: 'Midtrans QRIS', val: 'IDR 1.500.000', status: 'Settled (Success)', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+                    { date: '2026-07-11 21:05', inv: 'INV-CR-90412', method: 'ArtoPay QRIS', val: 'IDR 1.500.000', status: 'Settled (Success)', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
                     { date: '2026-07-11 20:30', inv: 'INV-CR-90411', method: 'Virtual Account BCA', val: 'IDR 750.000', status: 'Settled (Success)', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
                     { date: '2026-07-11 19:15', inv: 'INV-CR-90410', method: 'Credit Card (Stripe)', val: 'IDR 3.000.000', status: 'Pending', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' }
                   ].map((p, i) => (

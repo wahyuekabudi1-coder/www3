@@ -96,7 +96,6 @@ export interface Booking {
   bookingDate: string;
   status: 'Pending' | 'Confirmed' | 'Completed';
   paymentStatus?: 'Unpaid' | 'Paid' | 'Pending';
-  midtransToken?: string;
 }
 
 export interface AirportRoute {
@@ -117,7 +116,7 @@ export interface Airport {
   surchargeIDR: number;
 }
 
-export type ActivePage = 'home' | 'tours' | 'share-tour' | 'airport' | 'taxi' | 'partnerships' | 'contact' | 'bookings' | 'car-rental' | 'about' | 'midtrans-pay' | 'admin';
+export type ActivePage = 'home' | 'tours' | 'share-tour' | 'airport' | 'taxi' | 'partnerships' | 'contact' | 'bookings' | 'car-rental' | 'about' | 'admin';
 
 export interface TaxiMasterArea {
   id: string; // e.g. "A001", "A002"

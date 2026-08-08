@@ -9,9 +9,11 @@
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
+    "postinstall": "node -e \"const fs = require('fs'); const path = 'node_modules/@arto-pay/js-sdk/dist/arto-pay-sdk.esm.js'; if (fs.existsSync(path)) { let code = fs.readFileSync(path, 'utf8'); code = code.replace(/null===\\(S=document\\.currentScript\\)\\|\\|void 0===S\\?void 0:S\\.getAttribute\\(\\\"data-client-key\\\"\\)/g, 'typeof document !== \\\"undefined\\\" ? (document.currentScript?.getAttribute(\\\"data-client-key\\\") || document.getElementById(\\\"arto-pay-sdk-script\\\")?.getAttribute(\\\"data-client-key\\\") || \\\"pk_41cb9f2fd802ef417de4e82f8c32a80d356a02cdf32b52e68ad0\\\") : undefined'); fs.writeFileSync(path, code); }\"",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@arto-pay/js-sdk": "^1.0.3",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",

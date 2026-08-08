@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Booking } from "../types";
 import { CheckCircle2, Copy, Compass, ExternalLink, CreditCard, ShieldCheck, Loader2 } from "lucide-react";
 import { useLanguageCurrency } from "../LanguageCurrencyContext";
-import { getMidtransSnapToken, updateBooking } from "../api";
+import { updateBooking } from "../api";
+import { processArtoPayPayment } from "../../lib/artopay";
 
 interface BookingSuccessProps {
   booking: Booking;
@@ -23,66 +24,35 @@ export default function BookingSuccess({ booking: initialBooking, onNavigateToTr
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handlePayWithMidtrans = async () => {
+  const handlePayWithArtoPay = async () => {
     setPayLoading(true);
     setPayError("");
 
     try {
-      // Order ID with SHARE- prefix as specified in Tahap 3.4
-      const orderId = `SHARE-${booking.bookingCode}`;
-      
-      // Calculate amount in IDR (if price is in USD e.g. 150, convert to IDR: 150 * 16000 = 2,400,000 IDR)
+      const orderId = booking.bookingCode || booking.id;
       const amountInIDR = booking.totalPrice > 10000 
         ? Math.round(booking.totalPrice) 
         : Math.round(booking.totalPrice * 16000);
 
-      const snapResponse = await getMidtransSnapToken({
+      await processArtoPayPayment({
         orderId,
         amount: amountInIDR,
-        customerName: booking.fullName,
-        customerEmail: booking.email,
-        customerPhone: booking.phone || "085212347289",
-        serviceName: `SHARE TOUR: ${booking.tripTitle}`
-      });
-
-      if (snapResponse.isDemo) {
-        // Handle Demo Simulation mode cleanly
-        const updated = await updateBooking(booking.id, { status: "Confirmed" });
-        setBooking(updated);
-        if (snapResponse.redirect_url) {
-          window.location.href = snapResponse.redirect_url;
+        currency: "IDR",
+        onSuccess: async (res) => {
+          const updated = await updateBooking(booking.id, { status: "Confirmed" });
+          setBooking(updated);
+        },
+        onPending: async (res) => {
+          const updated = await updateBooking(booking.id, { status: "Pending" });
+          setBooking(updated);
+        },
+        onError: (err) => {
+          setPayError(t("Pembayaran ArtoPay tidak diselesaikan."));
         }
-        return;
-      }
-
-      // Check if Midtrans Snap script is loaded
-      const snapObj = (window as any).snap;
-      if (snapObj && typeof snapObj.pay === "function") {
-        snapObj.pay(snapResponse.token, {
-          onSuccess: async () => {
-            const updated = await updateBooking(booking.id, { status: "Confirmed" });
-            setBooking(updated);
-          },
-          onPending: async () => {
-            const updated = await updateBooking(booking.id, { status: "Pending" });
-            setBooking(updated);
-          },
-          onError: (err: any) => {
-            console.error("Midtrans Snap error:", err);
-            setPayError(t("Payment encountered an issue or was cancelled."));
-          },
-          onClose: () => {
-            console.log("Customer closed Snap payment popup.");
-          }
-        });
-      } else if (snapResponse.redirect_url) {
-        window.open(snapResponse.redirect_url, "_blank");
-      } else {
-        setPayError(t("Unable to open Midtrans payment gateway window."));
-      }
+      });
     } catch (err: any) {
       console.error(err);
-      setPayError(err.message || t("Failed to initialize Midtrans payment."));
+      setPayError(err.message || t("Gagal membuka gerbang pembayaran ArtoPay."));
     } finally {
       setPayLoading(false);
     }
@@ -99,7 +69,7 @@ export default function BookingSuccess({ booking: initialBooking, onNavigateToTr
           {t("Booking Submitted Successfully!")}
         </h1>
         <p className="text-sm text-gray-500 font-sans max-w-sm mx-auto">
-          {t("We have securely locked your seats. You can complete instant payment via Midtrans Gateway or check booking status.")}
+          {t("We have securely locked your seats. You can complete instant payment via ArtoPay Gateway or check booking status.")}
         </p>
       </div>
 
@@ -152,13 +122,13 @@ export default function BookingSuccess({ booking: initialBooking, onNavigateToTr
         </div>
       </div>
 
-      {/* Midtrans Payment Action Box */}
+      {/* ArtoPay Payment Action Box */}
       <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-lg border border-slate-800 text-left space-y-4">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center space-x-2">
             <CreditCard className="w-5 h-5 text-[#D6B16D]" />
             <span className="font-mono font-bold text-xs uppercase tracking-wider text-slate-200">
-              {t("Midtrans Payment Gateway")}
+              {t("ArtoPay Gateway Integration")}
             </span>
           </div>
           <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-800 text-[#D6B16D] border border-[#D6B16D]/30 font-bold">
@@ -167,7 +137,7 @@ export default function BookingSuccess({ booking: initialBooking, onNavigateToTr
         </div>
 
         <p className="text-xs text-slate-300 font-sans leading-relaxed">
-          {t("Klik tombol di bawah untuk membuka pop-up pembayaran resmi Midtrans Gateway (BCA, Mandiri, QRIS, Credit Card).")}
+          {t("Klik tombol di bawah untuk membuka modal pembayaran resmi ArtoPay Gateway (Virtual Account, QRIS, e-Wallet).")}
         </p>
 
         {payError && (
@@ -177,9 +147,9 @@ export default function BookingSuccess({ booking: initialBooking, onNavigateToTr
         )}
 
         <button
-          id="btn-pay-midtrans-snap"
+          id="btn-pay-artopay-sdk"
           type="button"
-          onClick={handlePayWithMidtrans}
+          onClick={handlePayWithArtoPay}
           disabled={payLoading || booking.status === "Confirmed"}
           className={`w-full py-4 rounded-xl font-mono font-extrabold text-xs uppercase tracking-widest transition-all shadow-md flex items-center justify-center space-x-2 cursor-pointer ${
             booking.status === "Confirmed"
@@ -192,7 +162,7 @@ export default function BookingSuccess({ booking: initialBooking, onNavigateToTr
           {payLoading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-              <span>{t("Menghubungkan Midtrans Snap...")}</span>
+              <span>{t("Menghubungkan ArtoPay...")}</span>
             </>
           ) : booking.status === "Confirmed" ? (
             <>
@@ -202,7 +172,7 @@ export default function BookingSuccess({ booking: initialBooking, onNavigateToTr
           ) : (
             <>
               <CreditCard className="w-4 h-4 text-slate-950" />
-              <span>{t("Bayar Seketika via Midtrans (SHARE-")} {booking.bookingCode})</span>
+              <span>{t("Bayar via ArtoPay (SHARE-")} {booking.bookingCode})</span>
             </>
           )}
         </button>
@@ -231,3 +201,4 @@ export default function BookingSuccess({ booking: initialBooking, onNavigateToTr
     </div>
   );
 }
+

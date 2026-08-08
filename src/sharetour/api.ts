@@ -440,31 +440,3 @@ export async function importBulk(data: { trips: Trip[]; batches: Batch[]; mode: 
   return { success: true, tripsCount: db.trips.length, batchesCount: db.batches.length };
 }
 
-export async function getMidtransSnapToken(params: {
-  orderId: string;
-  amount: number;
-  customerName: string;
-  customerEmail: string;
-  customerPhone?: string;
-  serviceName: string;
-}): Promise<{ token: string; redirect_url: string; isDemo: boolean }> {
-  try {
-    const res = await fetch(`${API_BASE}/midtrans/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
-    if (res.ok) {
-      return res.json();
-    }
-  } catch (e) {
-    console.warn("Midtrans token server endpoint unavailable, using mock token", e);
-  }
-
-  return {
-    token: "MOCK_SNAP_TOKEN_" + Date.now(),
-    redirect_url: "https://app.sandbox.midtrans.com/snap/v2/vtweb/" + Date.now(),
-    isDemo: true
-  };
-}
-

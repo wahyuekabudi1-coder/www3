@@ -19,7 +19,6 @@ import PartnershipsView from './views/PartnershipsView';
 import BookingsView from './views/BookingsView';
 import CarRentalView from './views/CarRentalView';
 import AboutView from './views/AboutView';
-import MidtransPayView from './views/MidtransPayView';
 import AdminView from './views/AdminView';
 import ShareTourView from './views/ShareTourView';
 import { motion, AnimatePresence } from 'motion/react';
@@ -48,8 +47,6 @@ function AppContent() {
         return <PartnershipsView />;
       case 'bookings':
         return <BookingsView />;
-      case 'midtrans-pay':
-        return <MidtransPayView />;
       case 'admin':
         return <AdminView />;
       default:
@@ -57,7 +54,7 @@ function AppContent() {
     }
   };
 
-  if (activePage === 'midtrans-pay' || activePage === 'admin') {
+  if (activePage === 'admin') {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-slate-900 selection:text-white">
         <main className="grow">

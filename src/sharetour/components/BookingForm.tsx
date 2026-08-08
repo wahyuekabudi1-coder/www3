@@ -3,6 +3,7 @@ import { Trip, Batch, Booking } from "../types";
 import { ChevronLeft, Sparkles, ShieldCheck, Send, MapPin, Clock, Globe, Lock, Check } from "lucide-react";
 import { createBooking } from "../api";
 import { useLanguageCurrency } from "../LanguageCurrencyContext";
+import { processArtoPayPayment } from "../../lib/artopay";
 
 interface BookingFormProps {
   trip: Trip;
@@ -135,7 +136,31 @@ export default function BookingForm({ trip, batch, nationalityType = 'WNI', onBa
       };
 
       const result = await createBooking(payload);
-      onSuccess(result);
+
+      // Trigger ArtoPay SDK Payment Gateway
+      try {
+        await processArtoPayPayment({
+          orderId: result.bookingCode || result.id,
+          amount: calculatedTotalPrice,
+          currency: 'IDR',
+          onSuccess: (payRes) => {
+            console.log("ArtoPay Payment Completed:", payRes);
+            onSuccess(result);
+          },
+          onPending: (payRes) => {
+            console.log("ArtoPay Payment Pending:", payRes);
+            onSuccess(result);
+          },
+          onError: (payErr) => {
+            console.warn("ArtoPay Payment dismissed or failed:", payErr);
+            // Still proceed to booking confirmation screen so user can see their booking code
+            onSuccess(result);
+          }
+        });
+      } catch (payError) {
+        // Fallback to showing ticket if SDK modal fails
+        onSuccess(result);
+      }
     } catch (e: any) {
       setErrorMsg(e.message || t("Failed to submit booking registration. Please verify connection and try again."));
     } finally {

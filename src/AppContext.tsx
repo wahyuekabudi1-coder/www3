@@ -425,7 +425,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.split('?')[0].replace('#/', '');
-      const validPages: ActivePage[] = ['home', 'tours', 'airport', 'taxi', 'partnerships', 'contact', 'bookings', 'car-rental', 'about', 'midtrans-pay', 'admin'];
+      const validPages: ActivePage[] = ['home', 'tours', 'airport', 'taxi', 'partnerships', 'contact', 'bookings', 'car-rental', 'about', 'admin'];
       if (validPages.includes(hash as ActivePage)) {
         setActivePageState(hash as ActivePage);
         window.scrollTo({ top: 0, behavior: 'smooth' });

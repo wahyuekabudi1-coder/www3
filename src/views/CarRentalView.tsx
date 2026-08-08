@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import CustomerReviewsSection from '../components/CustomerReviewsSection';
 import ComingSoonPage from '../components/ComingSoonPage';
+import { processArtoPayPayment } from '../lib/artopay';
 
 interface LocationItem {
   name: string;
@@ -689,7 +690,19 @@ export default function CarRentalView() {
 
     try {
       const newBooking = addBooking(bookingPayload);
-      window.location.hash = `#/midtrans-pay?id=${newBooking.id}&amount=${finalPrice.idr}&service=${encodeURIComponent(newBooking.serviceName)}&name=${encodeURIComponent(customerName)}&email=${encodeURIComponent(customerEmail)}&phone=${encodeURIComponent(customerPhone)}`;
+      processArtoPayPayment({
+        orderId: newBooking.id,
+        amount: finalPrice.idr,
+        currency: 'IDR',
+        onSuccess: () => {
+          window.location.hash = '#/bookings';
+        },
+        onError: () => {
+          window.location.hash = '#/bookings';
+        }
+      }).catch(() => {
+        window.location.hash = '#/bookings';
+      });
     } catch (err: any) {
       alert(err.message || 'An error occurred while building your booking.');
     }

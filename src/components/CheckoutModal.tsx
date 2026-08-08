@@ -3,6 +3,7 @@ import { useApp } from '../AppContext';
 import { X, ShieldCheck, CheckCircle2, Star, Sparkles, User, Mail, Phone, Calendar, ArrowRight, ChevronRight, Fuel, Briefcase, CreditCard } from 'lucide-react';
 import { VEHICLES } from '../data';
 import { motion, AnimatePresence } from 'motion/react';
+import { processArtoPayPayment } from '../lib/artopay';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -172,7 +173,27 @@ export default function CheckoutModal({
       const newBooking = addBooking(bookingPayload);
       setConfirmedBooking(newBooking);
 
-      // Redirect directly to Midtrans Payment Gateway
+      // Trigger ArtoPay Payment Gateway Modal
+      try {
+        await processArtoPayPayment({
+          orderId: newBooking.id,
+          amount: finalPrice.idr,
+          currency: 'IDR',
+          onSuccess: (res) => {
+            console.log('ArtoPay Payment Success:', res);
+          },
+          onPending: (res) => {
+            console.log('ArtoPay Payment Pending:', res);
+          },
+          onError: (err) => {
+            console.warn('ArtoPay Payment dismissed or error:', err);
+          }
+        });
+      } catch (payErr) {
+        console.warn('ArtoPay checkout trigger error:', payErr);
+      }
+
+      // Also support query param redirection for simulation fallback
       const qParams = new URLSearchParams({
         id: newBooking.id,
         amount: String(finalPrice.idr),

@@ -17,36 +17,21 @@ import {
   Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
-// Declare global window interface for Midtrans Snap API
-declare global {
-  interface Window {
-    snap: any;
-  }
-}
+import { processArtoPayPayment } from '../lib/artopay';
 
 export default function BookingsView() {
   const { bookings, formatPrice, setPage } = useApp();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [localBookings, setLocalBookings] = useState(bookings);
 
-  // Midtrans configuration states
-  const [midtransConfig, setMidtransConfig] = useState<{
-    isConfigured: boolean;
-    clientKey: string;
-    isProduction: boolean;
-    message: string;
-  } | null>(null);
-
   const [paymentLoadingId, setPaymentLoadingId] = useState<string | null>(null);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Sync state if bookings change in context
   useEffect(() => {
     setLocalBookings(bookings);
   }, [bookings]);
 
-  // Sync state reactively to localStorage events (e.g. completed payment in another tab)
+  // Sync state reactively to localStorage events
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'smartjourney_bookings') {
@@ -62,50 +47,12 @@ export default function BookingsView() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Fetch Midtrans Config and dynamically load Snap JS on mount
-  useEffect(() => {
-    fetch('/api/midtrans/config')
-      .then(res => res.json())
-      .then(data => {
-        setMidtransConfig(data);
-        
-        // Dynamically append snap.js script tag matching sandbox or production
-        const scriptSrc = data.isProduction
-          ? 'https://app.midtrans.com/snap/snap.js'
-          : 'https://app.sandbox.midtrans.com/snap/snap.js';
-        
-        const scriptId = 'midtrans-snap-script';
-        let script = document.getElementById(scriptId) as HTMLScriptElement;
-        
-        if (!script) {
-          script = document.createElement('script');
-          script.id = scriptId;
-          script.src = scriptSrc;
-          script.type = 'text/javascript';
-          if (data.clientKey) {
-            script.setAttribute('data-client-key', data.clientKey);
-          }
-          document.body.appendChild(script);
-        }
-      })
-      .catch(err => {
-        console.error('Failed to load Midtrans config from server:', err);
-        // Fallback placeholder config if server API is not reachable
-        setMidtransConfig({
-          isConfigured: false,
-          clientKey: '',
-          isProduction: false,
-          message: 'Failed to establish API connection.'
-        });
-      });
-  }, []);
-
   const handleCancelBooking = (id: string) => {
     const updated = localBookings.filter(b => b.id !== id);
     setLocalBookings(updated);
     localStorage.setItem('smartjourney_bookings', JSON.stringify(updated));
     setCancellingId(null);
-    window.location.reload(); // Simple refresh to sync state cleanly
+    window.location.reload();
   };
 
   const handleChatSupport = (booking: any) => {
@@ -125,72 +72,27 @@ export default function BookingsView() {
     localStorage.setItem('smartjourney_bookings', JSON.stringify(updated));
   };
 
-  // Triggered when paying with Midtrans
-  const handlePayWithMidtrans = async (booking: any) => {
+  // Triggered when paying with ArtoPay
+  const handlePayWithArtoPay = async (booking: any) => {
     setPaymentLoadingId(booking.id);
     try {
-      // Create a Midtrans Snap transaction token via our fullstack Express endpoint
-      const response = await fetch('/api/midtrans/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      await processArtoPayPayment({
+        orderId: booking.id,
+        amount: booking.totalPriceIDR,
+        currency: 'IDR',
+        onSuccess: (res) => {
+          updateBookingPaymentStatus(booking.id, 'Paid');
         },
-        body: JSON.stringify({
-          orderId: booking.id,
-          amount: booking.totalPriceIDR,
-          customerName: booking.customerName || 'Alex Carter',
-          customerEmail: booking.customerEmail || 'sawahjayatrans@gmail.com',
-          customerPhone: booking.customerPhone || '085212347289',
-          serviceName: booking.serviceName
-        })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        let errMsg = 'Gagal memproses pembayaran ke Midtrans.';
-        if (errData.details) {
-          try {
-            const parsedDetails = JSON.parse(errData.details);
-            if (parsedDetails.error_messages && parsedDetails.error_messages.length > 0) {
-              errMsg = `Midtrans Error: ${parsedDetails.error_messages.join(', ')}`;
-            }
-          } catch (e) {
-            errMsg = `Midtrans Error: ${errData.details}`;
-          }
-        } else if (errData.error) {
-          errMsg = errData.error;
+        onPending: (res) => {
+          updateBookingPaymentStatus(booking.id, 'Pending');
+        },
+        onError: (err) => {
+          console.warn('ArtoPay checkout error/cancelled:', err);
         }
-        throw new Error(errMsg);
-      }
-
-      const data = await response.json();
-
-      // Launch standard checkout redirect behavior
-      if (data.redirect_url) {
-        // If it's the demo mode or a real transaction redirect, open in a new tab!
-        window.open(data.redirect_url, '_blank', 'noopener,noreferrer');
-      } else if (data.token && window.snap) {
-        // Real Snap popup fallback if redirect_url is not returned
-        window.snap.pay(data.token, {
-          onSuccess: function (result: any) {
-            console.log('payment success!', result);
-            updateBookingPaymentStatus(booking.id, 'Paid');
-          },
-          onPending: function (result: any) {
-            console.log('payment pending!', result);
-            updateBookingPaymentStatus(booking.id, 'Pending');
-          },
-          onError: function (result: any) {
-            console.error('payment error!', result);
-            alert('Pembayaran gagal atau dibatalkan. Silakan coba lagi.');
-          }
-        });
-      } else {
-        throw new Error('No valid token or redirection URL found.');
-      }
+      });
     } catch (err: any) {
-      console.error('Midtrans Snap payment trigger failed:', err);
-      alert(err.message || 'Gagal memproses pembayaran ke Midtrans. Silakan coba lagi.');
+      console.error('ArtoPay payment trigger failed:', err);
+      alert(err.message || 'Gagal memproses pembayaran ke ArtoPay.');
     } finally {
       setPaymentLoadingId(null);
     }
@@ -199,35 +101,6 @@ export default function BookingsView() {
   return (
     <div id="bookings-view" className="bg-[#1c3830] text-white min-h-screen pt-32 pb-16 relative">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        
-        {/* Banner: Config Status or Demo Alert */}
-        {midtransConfig && !midtransConfig.isConfigured && !bannerDismissed && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 sm:p-5 flex items-start justify-between gap-4"
-          >
-            <div className="flex gap-3">
-              <Info className="h-5.5 w-5.5 text-amber-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h4 className="text-sm font-bold text-amber-400 font-sans">Payment Integration Mode: Demo Simulator Active</h4>
-                <p className="text-xs text-neutral-300 leading-relaxed max-w-2xl">
-                  Midtrans Sandbox keys are currently not set in your environment variables. 
-                  We have built a gorgeous, interactive <strong>Midtrans Snap Simulator</strong> so you can test the exact end-to-end booking, payment checkout, and reservation updates right here!
-                </p>
-                <div className="pt-2 text-[10px] text-neutral-400 font-mono">
-                  To connect real transactions, add <code className="bg-white/5 px-1 py-0.5 rounded text-amber-200">MIDTRANS_SERVER_KEY</code> and <code className="bg-white/5 px-1 py-0.5 rounded text-amber-200">VITE_MIDTRANS_CLIENT_KEY</code> in Settings.
-                </div>
-              </div>
-            </div>
-            <button 
-              onClick={() => setBannerDismissed(true)}
-              className="text-neutral-400 hover:text-white p-1 hover:bg-white/5 rounded-lg transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </motion.div>
-        )}
 
         {/* Header Intro */}
         <div className="text-center space-y-3">
@@ -360,22 +233,22 @@ export default function BookingsView() {
                         <span>WhatsApp Coordinator</span>
                       </button>
                       
-                      {/* Midtrans Online Checkout Action */}
+                      {/* ArtoPay Online Checkout Action */}
                       {!isPaid && !isPending && (
                         <button
-                          onClick={() => handlePayWithMidtrans(booking)}
+                          onClick={() => handlePayWithArtoPay(booking)}
                           disabled={paymentLoadingId === booking.id}
                           className="bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black px-5 py-2.5 rounded-xl text-xs flex items-center space-x-2 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                         >
                           {paymentLoadingId === booking.id ? (
                             <>
                               <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                              <span>Membuat Token...</span>
+                              <span>Menghubungkan ArtoPay...</span>
                             </>
                           ) : (
                             <>
                               <CreditCard className="h-3.5 w-3.5" />
-                              <span>Bayar Sekarang (Midtrans)</span>
+                              <span>Bayar Sekarang (ArtoPay)</span>
                             </>
                           )}
                         </button>
@@ -384,7 +257,7 @@ export default function BookingsView() {
                       {isPaid && (
                         <span className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-4 py-2 rounded-xl text-xs font-bold">
                           <ShieldCheck className="h-4 w-4" />
-                          <span>Lunas (Terverifikasi Midtrans)</span>
+                          <span>Lunas (Terverifikasi ArtoPay)</span>
                         </span>
                       )}
 
@@ -395,8 +268,8 @@ export default function BookingsView() {
                             <span>Menunggu Pembayaran</span>
                           </span>
                           <button
-                            onClick={() => handlePayWithMidtrans(booking)}
-                            className="bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs px-3 py-2 rounded-xl font-medium"
+                            onClick={() => handlePayWithArtoPay(booking)}
+                            className="bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs px-3 py-2 rounded-xl font-medium cursor-pointer"
                           >
                             Ulangi
                           </button>
@@ -480,9 +353,9 @@ export default function BookingsView() {
             <div className="bg-neutral-900 border border-white/5 rounded-2xl p-4 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="text-xs text-neutral-400 space-y-1">
-                <p className="font-bold text-white">Informasi Pembayaran Midtrans</p>
+                <p className="font-bold text-white">Informasi Pembayaran ArtoPay</p>
                 <p className="leading-relaxed">
-                  Kami menyediakan integrasi pembayaran aman dengan gerbang pembayaran Midtrans. Anda dapat memilih metode pembayaran instan seperti Gopay/QRIS, transfer Bank Virtual Account, atau Kartu Kredit. Setelah pembayaran lunas, kode QR tiket Anda akan diverifikasi secara otomatis dan status pemesanan Anda berubah menjadi LUNAS.
+                  Kami menyediakan integrasi pembayaran aman dengan gerbang pembayaran ArtoPay. Anda dapat memilih metode pembayaran instan seperti Virtual Account, QRIS, e-Wallet, atau Kartu Kredit. Setelah pembayaran lunas, kode QR tiket Anda akan diverifikasi secara otomatis dan status pemesanan Anda berubah menjadi LUNAS.
                 </p>
               </div>
             </div>
