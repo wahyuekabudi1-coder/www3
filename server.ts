@@ -186,6 +186,105 @@ async function startServer() {
   app.use(express.json({ limit: '15mb' }));
 
   // -------------------------------------------------------------
+  // SEO Crawlers Endpoints: Robots.txt & Dynamic Sitemap.xml
+  // -------------------------------------------------------------
+
+  app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send(`User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://smartjourney.co.id/sitemap.xml
+`);
+  });
+
+  app.get('/sitemap.xml', (req, res) => {
+    res.type('application/xml');
+    const baseUrl = 'https://smartjourney.co.id';
+    const currentDate = new Date().toISOString().split('T')[0];
+
+    let tripsXml = '';
+    try {
+      const db = readDB();
+      if (db && db.trips) {
+        tripsXml = db.trips.map((t: any) => `
+  <url>
+    <loc>${baseUrl}/#/tours?id=${t.id || t.slug}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>`).join('');
+      }
+    } catch {
+      // ignore
+    }
+
+    const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/#/tours</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/#/car-rental</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/#/share-tour</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/#/airport</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/#/taxi</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/#/about</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/#/partnerships</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/#/bookings</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.5</priority>
+  </url>${tripsXml}
+</urlset>`;
+
+    res.send(sitemapContent);
+  });
+
+  // -------------------------------------------------------------
   // Share Tour Database & Core API Routes
   // -------------------------------------------------------------
 

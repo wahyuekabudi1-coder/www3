@@ -6,6 +6,7 @@
 import React from 'react';
 import { AppProvider, useApp } from './AppContext';
 import { LanguageCurrencyProvider } from './sharetour/LanguageCurrencyContext';
+import SEOHead from './components/SEOHead';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
@@ -76,6 +77,8 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-[#F8FAF9] text-neutral-900 flex flex-col justify-between selection:bg-[#315B4F] selection:text-white">
+      {/* Dynamic Document Title & SEO Schema Manager */}
+      <SEOHead />
       
       {/* Sticky Premium Header */}
       <Header />
