@@ -7,6 +7,7 @@ import {
   Plane, Mail, Phone, User, Sparkles, X, Check, ArrowRightLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { processArtoPayPayment } from '../lib/artopay';
 import CustomerReviewsSection from '../components/CustomerReviewsSection';
 import ComingSoonPage from '../components/ComingSoonPage';
 
@@ -701,52 +702,32 @@ export default function TaxiView() {
     }
   };
 
-  // Midtrans Inline pay simulation
-  const handlePayMidtrans = async () => {
+  // ArtoPay Inline checkout flow
+  const handlePayArtoPay = async () => {
     if (!bookingSuccess) return;
     setPaymentLoading(true);
     setPaymentError(null);
 
     try {
-      const response = await fetch('/api/midtrans/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      await processArtoPayPayment({
+        orderId: bookingSuccess.id,
+        amount: bookingSuccess.totalPriceIDR,
+        currency: 'IDR',
+        onSuccess: (res) => {
+          console.log('ArtoPay payment success:', res);
+          setBookingSuccess((prev: any) => prev ? { ...prev, paymentStatus: 'Paid' } : null);
         },
-        body: JSON.stringify({
-          orderId: bookingSuccess.id,
-          amount: bookingSuccess.totalPriceIDR,
-          customerName: bookingSuccess.customerName,
-          customerEmail: bookingSuccess.customerEmail,
-          customerPhone: bookingSuccess.customerPhone,
-          serviceName: bookingSuccess.serviceName
-        })
+        onPending: (res) => {
+          console.log('ArtoPay payment pending:', res);
+          setBookingSuccess((prev: any) => prev ? { ...prev, paymentStatus: 'Pending' } : null);
+        },
+        onError: (err) => {
+          console.error('ArtoPay payment error/cancelled:', err);
+          setPaymentError('Pembayaran ArtoPay dibatalkan atau tidak diselesaikan.');
+        }
       });
-
-      if (!response.ok) {
-        throw new Error("Gagal memproses token pembayaran Midtrans.");
-      }
-
-      const data = await response.json();
-      if (data.redirect_url) {
-        window.open(data.redirect_url, '_blank', 'noopener,noreferrer');
-      } else if (data.token && (window as any).snap) {
-        (window as any).snap.pay(data.token, {
-          onSuccess: function (result: any) {
-            setBookingSuccess((prev: any) => prev ? { ...prev, paymentStatus: 'Paid' } : null);
-          },
-          onPending: function (result: any) {
-            setBookingSuccess((prev: any) => prev ? { ...prev, paymentStatus: 'Pending' } : null);
-          },
-          onError: function (result: any) {
-            alert('Pembayaran gagal atau dibatalkan. Silakan hubungi admin.');
-          }
-        });
-      } else {
-        throw new Error('Midtrans gateway offline. Silakan lakukan transfer atau konfirmasi WhatsApp.');
-      }
     } catch (err: any) {
-      setPaymentError(err.message || 'Terjadi kesalahan koneksi sistem pembayaran.');
+      setPaymentError(err.message || 'Terjadi kesalahan koneksi sistem pembayaran ArtoPay.');
     } finally {
       setPaymentLoading(false);
     }
@@ -1436,7 +1417,7 @@ export default function TaxiView() {
                   </button>
 
                   <button
-                    onClick={handlePayMidtrans}
+                    onClick={handlePayArtoPay}
                     disabled={paymentLoading}
                     className="w-full bg-neutral-900 hover:bg-neutral-950 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-sm transition-colors border border-white/10 disabled:opacity-50 cursor-pointer"
                   >
@@ -1445,7 +1426,7 @@ export default function TaxiView() {
                     ) : (
                       <ShieldCheck className="h-4 w-4 text-emerald-400" />
                     )}
-                    <span>Pay Online Securely (Midtrans)</span>
+                    <span>Pay Online Securely (ArtoPay)</span>
                   </button>
                 </div>
 

@@ -7,6 +7,7 @@ import {
   Mail, Phone, ChevronRight, CheckCircle2, Star, Fuel, Landmark
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { processArtoPayPayment } from '../lib/artopay';
 import CustomerReviewsSection from '../components/CustomerReviewsSection';
 import ComingSoonPage from '../components/ComingSoonPage';
 
@@ -243,68 +244,30 @@ export default function AirportTransferView() {
     }
   };
 
-  const handlePayWithMidtransInline = async () => {
+  const handlePayWithArtoPayInline = async () => {
     if (!confirmedBooking) return;
     setPaymentLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch('/api/midtrans/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      await processArtoPayPayment({
+        orderId: confirmedBooking.id,
+        amount: confirmedBooking.totalPriceIDR,
+        currency: 'IDR',
+        onSuccess: (res) => {
+          console.log('ArtoPay payment success!', res);
+          setConfirmedBooking((prev: any) => prev ? { ...prev, paymentStatus: 'Paid' } : null);
         },
-        body: JSON.stringify({
-          orderId: confirmedBooking.id,
-          amount: confirmedBooking.totalPriceIDR,
-          customerName: confirmedBooking.customerName,
-          customerEmail: confirmedBooking.customerEmail,
-          customerPhone: confirmedBooking.customerPhone,
-          serviceName: confirmedBooking.serviceName
-        })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        let errMsg = 'Gagal memproses pembayaran ke Midtrans.';
-        if (errData.details) {
-          try {
-            const parsedDetails = JSON.parse(errData.details);
-            if (parsedDetails.error_messages && parsedDetails.error_messages.length > 0) {
-              errMsg = `Midtrans Error: ${parsedDetails.error_messages.join(', ')}`;
-            }
-          } catch (e) {
-            errMsg = `Midtrans Error: ${errData.details}`;
-          }
-        } else if (errData.error) {
-          errMsg = errData.error;
+        onPending: (res) => {
+          console.log('ArtoPay payment pending!', res);
+          setConfirmedBooking((prev: any) => prev ? { ...prev, paymentStatus: 'Pending' } : null);
+        },
+        onError: (err) => {
+          console.error('ArtoPay payment error/cancelled!', err);
+          alert('Pembayaran ArtoPay dibatalkan atau tidak diselesaikan.');
         }
-        throw new Error(errMsg);
-      }
-
-      const data = await response.json();
-
-      if (data.redirect_url) {
-        window.open(data.redirect_url, '_blank', 'noopener,noreferrer');
-      } else if (data.token && (window as any).snap) {
-        (window as any).snap.pay(data.token, {
-          onSuccess: function (result: any) {
-            console.log('payment success!', result);
-            setConfirmedBooking((prev: any) => prev ? { ...prev, paymentStatus: 'Paid' } : null);
-          },
-          onPending: function (result: any) {
-            console.log('payment pending!', result);
-            setConfirmedBooking((prev: any) => prev ? { ...prev, paymentStatus: 'Pending' } : null);
-          },
-          onError: function (result: any) {
-            console.error('payment error!', result);
-            alert('Pembayaran gagal atau dibatalkan. Silakan coba lagi.');
-          }
-        });
-      } else {
-        throw new Error('Metode pembayaran Midtrans tidak tersedia di preview ini. Silakan hubungi admin via WhatsApp untuk pembayaran cepat.');
-      }
+      });
     } catch (err: any) {
-      setErrorMessage(err.message || 'Terjadi kesalahan koneksi sistem pembayaran.');
+      setErrorMessage(err.message || 'Terjadi kesalahan koneksi sistem pembayaran ArtoPay.');
     } finally {
       setPaymentLoading(false);
     }
@@ -1105,7 +1068,7 @@ export default function AirportTransferView() {
                     <div className="bg-neutral-50 rounded-2xl p-4 border border-neutral-100 flex items-start gap-3">
                       <ShieldCheck className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
                       <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Kami menjamin keamanan data pribadi Anda. Sistem kami tidak memerlukan pembayaran kartu kredit hari ini; Anda dapat memilih untuk membayar cash pada kedatangan, atau mengamankan transaksi via link Midtrans setelah formulir ini dikirim.
+                        Kami menjamin keamanan data pribadi Anda. Sistem kami tidak memerlukan pembayaran kartu kredit hari ini; Anda dapat memilih untuk membayar cash pada kedatangan, atau mengamankan transaksi via ArtoPay Gateway setelah formulir ini dikirim.
                       </p>
                     </div>
 
@@ -1258,41 +1221,41 @@ export default function AirportTransferView() {
                 <div>
                   <h3 className="text-lg font-extrabold text-neutral-900">Metode Pembayaran Aman &amp; Konfirmasi</h3>
                   <p className="text-xs text-neutral-500 mt-1">
-                    Silakan pilih metode penyelesaian pembayaran di bawah ini. Anda dapat membayar secara instan dan otomatis menggunakan Midtrans, atau bayar cash kepada driver kami saat tiba dengan konfirmasi cepat via WhatsApp.
+                    Silakan pilih metode penyelesaian pembayaran di bawah ini. Anda dapat membayar secara instan dan otomatis menggunakan ArtoPay Gateway, atau bayar cash kepada driver kami saat tiba dengan konfirmasi cepat via WhatsApp.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Option 1: Midtrans Online Payment */}
+                  {/* Option 1: ArtoPay Online Payment */}
                   <div className="border border-neutral-200 rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-500/40 transition-colors">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Landmark className="h-5 w-5 text-emerald-600" />
-                        <h4 className="font-bold text-sm text-neutral-900">Bayar Instan Online</h4>
+                        <h4 className="font-bold text-sm text-neutral-900">Bayar Instan Online (ArtoPay)</h4>
                       </div>
                       <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Bayar otomatis &amp; aman via *Midtrans Snap* (Transfer Bank, GoPay, OVO, ShopeePay, Kartu Kredit). Konfirmasi instan tanpa kirim bukti.
+                        Bayar otomatis &amp; aman via *ArtoPay Gateway* (Virtual Account, QRIS, e-Wallet, Kartu Kredit). Konfirmasi instan tanpa kirim bukti.
                       </p>
                     </div>
                     
                     <button
-                      onClick={handlePayWithMidtransInline}
+                      onClick={handlePayWithArtoPayInline}
                       disabled={paymentLoading || confirmedBooking.paymentStatus === 'Paid'}
                       className="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-neutral-100 disabled:text-neutral-400 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all uppercase tracking-wider font-mono active:scale-95 shadow-sm shadow-emerald-500/10"
                     >
                       {paymentLoading ? (
                         <>
                           <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                          <span>Loading snap...</span>
+                          <span>Menghubungkan ArtoPay...</span>
                         </>
                       ) : confirmedBooking.paymentStatus === 'Paid' ? (
                         <>
                           <Check className="h-4 w-4 stroke-[3]" />
-                          <span>Sudah Terbayar Lunas</span>
+                          <span>Sudah Terbayar Lunas (ArtoPay)</span>
                         </>
                       ) : (
                         <>
-                          <span>Bayar via Midtrans</span>
+                          <span>Bayar via ArtoPay</span>
                           <ArrowRight className="h-3.5 w-3.5" />
                         </>
                       )}

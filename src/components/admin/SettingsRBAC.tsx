@@ -183,11 +183,11 @@ export default function SettingsRBAC({
             <div className="space-y-4 border-t border-neutral-850 pt-5">
               <h4 className="text-xs font-black text-amber-500 tracking-wider uppercase font-mono flex items-center gap-2">
                 <Key className="h-4 w-4 text-amber-500" />
-                <span>Kredensial Gateway Midtrans (Secure Sandbox Keys)</span>
+                <span>Kredensial Gateway ArtoPay (ArtoPay Production &amp; Sandbox Keys)</span>
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-neutral-400 block uppercase">Sandbox Client Key</label>
+                  <label className="text-[10px] font-bold text-neutral-400 block uppercase">ArtoPay Public Key</label>
                   <input
                     type="text"
                     required
@@ -197,7 +197,7 @@ export default function SettingsRBAC({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-neutral-400 block uppercase">Sandbox Server Key</label>
+                  <label className="text-[10px] font-bold text-neutral-400 block uppercase">ArtoPay Secret Key</label>
                   <input
                     type="password"
                     required

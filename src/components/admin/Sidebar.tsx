@@ -65,7 +65,7 @@ export default function Sidebar({
       items: [
         { id: 'pricing', label: 'Kalender & Surcharge', icon: Calendar },
         { id: 'promo', label: 'Diskon & Promo', icon: Percent },
-        { id: 'payments', label: 'Midtrans Webhook', icon: CreditCard },
+        { id: 'payments', label: 'ArtoPay Webhook', icon: CreditCard },
         { id: 'finance', label: 'Arus Kas Ledger', icon: DollarSign }
       ]
     },

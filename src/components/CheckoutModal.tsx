@@ -193,18 +193,8 @@ export default function CheckoutModal({
         console.warn('ArtoPay checkout trigger error:', payErr);
       }
 
-      // Also support query param redirection for simulation fallback
-      const qParams = new URLSearchParams({
-        id: newBooking.id,
-        amount: String(finalPrice.idr),
-        service: serviceName,
-        name: customerName.trim(),
-        email: customerEmail.toLowerCase().trim(),
-        phone: customerPhone.trim()
-      });
-      
       onClose();
-      window.location.hash = `#/midtrans-pay?${qParams.toString()}`;
+      window.location.hash = '#/bookings';
     } catch (err: any) {
       setErrorMessage(err.message || 'Terjadi kesalahan saat memproses reservasi Anda.');
     }
@@ -609,14 +599,14 @@ export default function CheckoutModal({
                   {/* Submission segment */}
                   <div className="pt-4 border-t border-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <p className="text-[11px] text-neutral-400 leading-relaxed max-w-sm">
-                      Dengan melanjutkan, pesanan Anda akan diproses dan diteruskan ke gerbang pembayaran aman <strong className="text-sky-400">Midtrans Payment Gateway</strong> (QRIS, Transfer Bank BCA/Mandiri/BRI, Kartu Kredit).
+                      Dengan melanjutkan, pesanan Anda akan diproses dan diteruskan ke gerbang pembayaran aman <strong className="text-[#D6B16D]">ArtoPay Payment Gateway</strong> (QRIS, Transfer Bank, e-Wallet, Kartu Kredit).
                     </p>
                     <button
                       type="submit"
                       className="bg-[#315B4F] hover:bg-[#203c34] text-white font-display font-bold px-6 py-3.5 rounded-2xl flex items-center justify-center space-x-2 shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer border border-[#467b6b]"
                     >
                       <CreditCard className="h-4.5 w-4.5 text-[#D6B16D]" />
-                      <span>Bayar via Midtrans Gateway</span>
+                      <span>Bayar via ArtoPay Gateway</span>
                       <ArrowRight className="h-4 w-4 text-white" />
                     </button>
                   </div>

@@ -5435,7 +5435,7 @@ export default function AdminView() {
                     { step: '1. Booking Ingress', status: '8 Pending Order', color: 'bg-amber-500/20 text-amber-400' },
                     { step: '2. Driver & Vehicle Assign', status: '12 Confirmed / Ready', color: 'bg-indigo-500/20 text-indigo-400' },
                     { step: '3. active trip transit', status: '6 Trips On Road', color: 'bg-emerald-500/20 text-emerald-400' },
-                    { step: '4. invoice settlement', status: '4 Paid/Settled via Midtrans', color: 'bg-teal-500/20 text-teal-400' }
+                    { step: '4. invoice settlement', status: '4 Paid/Settled via ArtoPay', color: 'bg-teal-500/20 text-teal-400' }
                   ].map((x, i) => (
                     <div key={i} className={`flex justify-between items-center p-3 rounded-xl ${theme.innerCard} border`}>
                       <span className="text-xs font-bold uppercase tracking-wide">{x.step}</span>
@@ -5779,7 +5779,7 @@ export default function AdminView() {
                   </div>
                   <h4 className="text-sm font-black uppercase tracking-wider font-mono">Buku Kas &amp; Ledger Omset</h4>
                   <p className={`text-xs ${theme.textSecondary}`}>
-                    Rincian total tagihan nominal masuk, komisi guide, potongan fee Midtrans, dan keuntungan bersih terhitung.
+                    Rincian total tagihan nominal masuk, komisi guide, potongan fee ArtoPay, dan keuntungan bersih terhitung.
                   </p>
                 </div>
                 <button 
@@ -6200,7 +6200,7 @@ export default function AdminView() {
                     </div>
                     <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
                       {[
-                        { title: 'Pembayaran Diterima', desc: 'Tour #SJ-TB-9811 telah terbayar lunas via Midtrans.', time: '5m yang lalu' },
+                        { title: 'Pembayaran Diterima', desc: 'Tour #SJ-TB-9811 telah terbayar lunas via ArtoPay.', time: '5m yang lalu' },
                         { title: 'Alokasi Otomatis Supir', desc: 'Supir "Made Wijaya" berhasil dialokasikan ke Rental #SJ-RB-4410.', time: '12m yang lalu' },
                         { title: 'Pembaruan Katalog Wisata', desc: 'Admin Smart Journey memperbarui harga promo tur Uluwatu Sunset.', time: '1h yang lalu' }
                       ].map((n, i) => (
