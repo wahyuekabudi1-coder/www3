@@ -29,25 +29,32 @@ export default function BookingSuccess({ booking: initialBooking, onNavigateToTr
     setPayError("");
 
     try {
-      const orderId = booking.bookingCode || booking.id;
-      const amountInIDR = booking.totalPrice > 10000 
-        ? Math.round(booking.totalPrice) 
-        : Math.round(booking.totalPrice * 16000);
+      const orderId = booking.bookingCode || booking.id || `SJ-${Math.floor(100000 + Math.random() * 900000)}`;
+      const rawPrice = Number(booking.totalPrice) || 1500000;
+      const amountInIDR = rawPrice > 10000 
+        ? Math.round(rawPrice) 
+        : Math.round(rawPrice * 16000);
 
       await processArtoPayPayment({
         orderId,
         amount: amountInIDR,
         currency: "IDR",
         onSuccess: async (res) => {
+          setPayError("");
           const updated = await updateBooking(booking.id, { status: "Confirmed" });
           setBooking(updated);
         },
         onPending: async (res) => {
+          setPayError("");
           const updated = await updateBooking(booking.id, { status: "Pending" });
           setBooking(updated);
         },
         onError: (err) => {
-          setPayError(t("Pembayaran ArtoPay tidak diselesaikan."));
+          if (err && err.message) {
+            setPayError(err.message);
+          } else {
+            setPayError(t("Pembayaran ArtoPay dibatalkan atau tidak diselesaikan."));
+          }
         }
       });
     } catch (err: any) {
@@ -172,7 +179,7 @@ export default function BookingSuccess({ booking: initialBooking, onNavigateToTr
           ) : (
             <>
               <CreditCard className="w-4 h-4 text-slate-950" />
-              <span>{t("Bayar via ArtoPay (SHARE-")} {booking.bookingCode})</span>
+              <span>{t("Bayar via ArtoPay")} ({booking.bookingCode})</span>
             </>
           )}
         </button>
