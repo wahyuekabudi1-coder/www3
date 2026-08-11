@@ -481,14 +481,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...bookingData,
       id,
       bookingDate,
-      status: 'Confirmed', // Instantly confirm for premium customer delight!
-      paymentStatus: 'Unpaid'
+      status: 'Pending',
+      paymentStatus: 'Pending'
     };
 
     const updated = [newBooking, ...bookings];
     setBookings(updated);
     localStorage.setItem('smartjourney_bookings', JSON.stringify(updated));
-    addLog(`New booking ${id} received for ${bookingData.serviceName}`);
+    addLog(`New booking ${id} received for ${bookingData.serviceName} (Status: Pending Payment)`);
+
+    // Post to server DB asynchronously for ArtoPay webhook tracking
+    fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        bookingCode: id,
+        serviceName: bookingData.serviceName,
+        customerName: bookingData.customerName,
+        customerEmail: bookingData.customerEmail,
+        customerPhone: bookingData.customerPhone,
+        totalPrice: bookingData.totalPrice,
+        totalPriceIDR: bookingData.totalPriceIDR || bookingData.totalPrice,
+        status: 'Pending',
+        paymentStatus: 'Pending',
+        details: bookingData.details || {}
+      })
+    }).catch(err => console.warn('Server booking sync warning:', err));
+
     return newBooking;
   };
 

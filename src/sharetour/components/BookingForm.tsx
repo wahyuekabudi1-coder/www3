@@ -143,6 +143,10 @@ export default function BookingForm({ trip, batch, nationalityType = 'WNI', onBa
           orderId: result.bookingCode || result.id,
           amount: calculatedTotalPrice,
           currency: 'IDR',
+          description: trip.title,
+          customerName: name.trim(),
+          customerEmail: email.toLowerCase().trim(),
+          customerPhone: whatsapp.trim(),
           onSuccess: (payRes) => {
             console.log("ArtoPay Payment Completed:", payRes);
             onSuccess(result);
@@ -152,14 +156,13 @@ export default function BookingForm({ trip, batch, nationalityType = 'WNI', onBa
             onSuccess(result);
           },
           onError: (payErr) => {
-            console.warn("ArtoPay Payment dismissed or failed:", payErr);
-            // Still proceed to booking confirmation screen so user can see their booking code
-            onSuccess(result);
+            console.error("ArtoPay Payment Gateway Error:", payErr);
+            setErrorMsg(payErr.message || t("Gagal menghubungkan ke ArtoPay Gateway. Silakan periksa kredensial API key."));
           }
         });
-      } catch (payError) {
-        // Fallback to showing ticket if SDK modal fails
-        onSuccess(result);
+      } catch (payError: any) {
+        console.error("ArtoPay checkout trigger exception:", payError);
+        setErrorMsg(payError.message || t("Gagal memproses transaksi ArtoPay Gateway."));
       }
     } catch (e: any) {
       setErrorMsg(e.message || t("Failed to submit booking registration. Please verify connection and try again."));

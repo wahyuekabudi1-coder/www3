@@ -173,28 +173,37 @@ export default function CheckoutModal({
       const newBooking = addBooking(bookingPayload);
       setConfirmedBooking(newBooking);
 
-      // Trigger ArtoPay Payment Gateway Modal
+      // Trigger ArtoPay Payment Gateway
       try {
         await processArtoPayPayment({
           orderId: newBooking.id,
           amount: finalPrice.idr,
           currency: 'IDR',
+          description: serviceName,
+          customerName: customerName.trim(),
+          customerEmail: customerEmail.toLowerCase().trim(),
+          customerPhone: customerPhone.trim(),
           onSuccess: (res) => {
-            console.log('ArtoPay Payment Success:', res);
+            console.log('ArtoPay Payment Completed Event:', res);
+            onClose();
+            window.location.hash = '#/bookings';
           },
           onPending: (res) => {
-            console.log('ArtoPay Payment Pending:', res);
+            console.log('ArtoPay Payment Pending Event:', res);
+            onClose();
+            window.location.hash = '#/bookings';
           },
           onError: (err) => {
-            console.warn('ArtoPay Payment dismissed or error:', err);
+            console.error('ArtoPay Payment Error:', err);
+            setErrorMessage(err.message || 'Gagal menghubungkan ke ArtoPay Gateway. Silakan periksa kredensial ArtoPay.');
           }
         });
-      } catch (payErr) {
-        console.warn('ArtoPay checkout trigger error:', payErr);
+        onClose();
+        window.location.hash = '#/bookings';
+      } catch (payErr: any) {
+        console.error('ArtoPay checkout trigger error:', payErr);
+        setErrorMessage(payErr.message || 'Gagal memproses pembayaran via ArtoPay Gateway.');
       }
-
-      onClose();
-      window.location.hash = '#/bookings';
     } catch (err: any) {
       setErrorMessage(err.message || 'Terjadi kesalahan saat memproses reservasi Anda.');
     }

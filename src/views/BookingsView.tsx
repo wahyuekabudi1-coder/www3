@@ -31,6 +31,49 @@ export default function BookingsView() {
     setLocalBookings(bookings);
   }, [bookings]);
 
+  // Poll server payment status for pending bookings to ensure sync with ArtoPay Webhook
+  useEffect(() => {
+    const pendingItems = localBookings.filter(b => b.paymentStatus === 'Pending' || b.paymentStatus === 'Unpaid');
+    if (pendingItems.length === 0) return;
+
+    let isMounted = true;
+
+    const syncPaymentStatuses = async () => {
+      let hasChanges = false;
+      const nextBookings = [...localBookings];
+
+      for (const b of pendingItems) {
+        try {
+          const res = await fetch(`/api/orders/${b.id}/payment-status`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.found && data.paymentStatus === 'Paid') {
+              const idx = nextBookings.findIndex(item => item.id === b.id);
+              if (idx !== -1) {
+                nextBookings[idx] = { ...nextBookings[idx], paymentStatus: 'Paid', status: 'Confirmed' };
+                hasChanges = true;
+              }
+            }
+          }
+        } catch (err) {
+          // Silent polling error catch
+        }
+      }
+
+      if (hasChanges && isMounted) {
+        setLocalBookings(nextBookings);
+        localStorage.setItem('smartjourney_bookings', JSON.stringify(nextBookings));
+      }
+    };
+
+    syncPaymentStatuses();
+    const timer = setInterval(syncPaymentStatuses, 5000);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [localBookings]);
+
   // Sync state reactively to localStorage events
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {

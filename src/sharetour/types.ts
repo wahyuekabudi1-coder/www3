@@ -78,6 +78,17 @@ export interface Booking {
   participantsNames: string[];
   proofOfPayment: string; // base64 or file name / "NOT_APPLICABLE_PREVIEW"
   status: BookingStatus;
+  paymentStatus?: string;
+  paymentIntentId?: string;
+  paymentId?: string;
+  paidAt?: string;
+  totalPriceIDR?: number;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  serviceName?: string;
+  type?: string;
+  details?: any;
   rejectReason?: string;
   totalPrice: number;
   createdAt: string;

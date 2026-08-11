@@ -542,161 +542,333 @@ app.get('/sitemap.xml', (req, res) => {
   });
 
   // -------------------------------------------------------------
-  // ArtoPay API Routes (@arto-pay/js-sdk)
+  // ArtoPay Official Production Gateway API Routes
   // -------------------------------------------------------------
 
   app.get('/api/artopay/config', (req, res) => {
     const rawSecretKey = process.env.ARTOPAY_SECRET_KEY || '';
     const secretKey = rawSecretKey.replace(/^["']|["']$/g, '').trim();
-    const isSandbox = process.env.ARTOPAY_SANDBOX !== 'false';
-    const publicKey = process.env.VITE_ARTOPAY_PUBLIC_KEY || process.env.ARTOPAY_PUBLIC_KEY || 'pk_sandbox_demo';
+    const envMode = process.env.ARTOPAY_ENV || (process.env.ARTOPAY_SANDBOX === 'false' ? 'production' : 'sandbox');
+    const baseUrl = process.env.ARTOPAY_API_BASE_URL || (envMode === 'production' ? 'https://api.arto-pay.com' : 'https://api-sandbox.arto-pay.com');
+    const publicKey = process.env.VITE_ARTOPAY_PUBLIC_KEY || process.env.ARTOPAY_PUBLIC_KEY || '';
 
     res.json({
       isConfigured: !!secretKey,
-      sandbox: isSandbox,
-      publicKey: publicKey,
+      env: envMode,
+      apiBaseUrl: baseUrl,
+      publicKey: publicKey ? `${publicKey.substring(0, 6)}...` : '',
       message: secretKey
-        ? "ArtoPay is configured and operational."
-        : "ARTOPAY_SECRET_KEY is not set. Operating in Sandbox Demo Mode."
+        ? "ArtoPay Server Secret Key is configured."
+        : "ARTOPAY_SECRET_KEY is missing. Please add ARTOPAY_SECRET_KEY in Vercel/Environment Variables."
     });
   });
 
   app.post(['/api/artopay/payment-intent', '/artopay/payment-intent'], async (req, res) => {
     try {
-      let { orderId, amount, currency = 'IDR' } = req.body || {};
+      let { orderId, amount, currency = 'IDR', description, customerId, metadata, customerName, customerEmail, customerPhone } = req.body || {};
 
       if (!orderId) {
-        orderId = `SJ-${Math.floor(100000 + Math.random() * 900000)}`;
+        return res.status(400).json({ error: 'orderId parameter is required' });
       }
 
       let numericAmount = Number(amount);
       if (!numericAmount || isNaN(numericAmount) || numericAmount <= 0) {
-        numericAmount = 1500000;
+        return res.status(400).json({ error: 'Amount must be a valid positive number' });
       }
 
       const rawSecretKey = process.env.ARTOPAY_SECRET_KEY || '';
       const secretKey = rawSecretKey.replace(/^["']|["']$/g, '').trim();
-      
-      const rawPublicKey = process.env.VITE_ARTOPAY_PUBLIC_KEY || process.env.ARTOPAY_PUBLIC_KEY || 'pk_41cb9f2fd802ef417de4e82f8c32a80d356a02cdf32b52e68ad0';
-      const defaultPublicKey = rawPublicKey.replace(/^["']|["']$/g, '').trim() || 'pk_41cb9f2fd802ef417de4e82f8c32a80d356a02cdf32b52e68ad0';
 
-      const isLiveKey = secretKey.startsWith('sk_live') || secretKey.startsWith('sk_41cb');
-      const isSandbox = process.env.ARTOPAY_SANDBOX === 'true' || (!isLiveKey && process.env.ARTOPAY_SANDBOX !== 'false');
-
-      // Fallback for Demo Simulation Mode if ARTOPAY_SECRET_KEY is missing
+      // SECURITY RULE: Reject request if Secret Key is missing. DO NOT produce fake/mock payment!
       if (!secretKey) {
-        console.warn('[ArtoPay Backend] ARTOPAY_SECRET_KEY is missing. Providing simulated payment intent for sandbox testing.');
-        const mockPaymentId = `pay_${orderId}_${Math.floor(100000 + Math.random() * 900000)}`;
-        return res.json({
-          id: mockPaymentId,
-          paymentId: mockPaymentId,
-          clientSecret: `sec_${Math.random().toString(36).substring(2, 12)}`,
-          customerToken: `cust_${Math.random().toString(36).substring(2, 12)}`,
-          publicKey: defaultPublicKey,
-          orderId: String(orderId),
-          sandbox: true,
-          isDemo: true,
-          message: 'Operating in ArtoPay Sandbox Demo Mode. Set ARTOPAY_SECRET_KEY for live production transactions.'
+        console.error('[ArtoPay Server Error] ARTOPAY_SECRET_KEY environment variable is not configured.');
+        return res.status(400).json({
+          error: 'Integrasi ArtoPay belum siap. ARTOPAY_SECRET_KEY belum diisi di Environment Variables Vercel/Server. Pembayaran tidak dapat diproses.'
         });
       }
 
-      // ArtoPay API v1.1 Sandbox Endpoint (as per official specification)
-      const candidateUrls = [
-        'https://api-sandbox.arto-pay.com/v1.1/payment-intents',
-        'https://api.arto-pay.com/v1.1/payment-intents',
-        'https://api.artopay.online/v1.1/payment-intents'
-      ];
+      const envMode = process.env.ARTOPAY_ENV || (process.env.ARTOPAY_SANDBOX === 'false' ? 'production' : 'sandbox');
+      const baseUrl = process.env.ARTOPAY_API_BASE_URL || (envMode === 'production' ? 'https://api.arto-pay.com' : 'https://api-sandbox.arto-pay.com');
 
-      console.log(`[ArtoPay Backend] Creating payment intent via https://api-sandbox.arto-pay.com/v1.1/payment-intents for order: ${orderId}, amount: ${numericAmount} ${currency}`);
+      const rawPublicKey = process.env.VITE_ARTOPAY_PUBLIC_KEY || process.env.ARTOPAY_PUBLIC_KEY || '';
+      const publicKey = rawPublicKey.replace(/^["']|["']$/g, '').trim();
+
+      // Check DB for existing order to avoid double payment or amount tampering
+      const db = readDB();
+      if (!db.bookings) db.bookings = [];
+
+      let existingOrderIndex = db.bookings.findIndex(b => b.bookingCode === orderId || b.id === orderId);
+      let existingOrder = existingOrderIndex !== -1 ? db.bookings[existingOrderIndex] : null;
+
+      if (existingOrder) {
+        if (existingOrder.paymentStatus === 'Paid' || existingOrder.status === 'Confirmed') {
+          return res.status(400).json({ error: 'Pesanan ini sudah lunas (PAID). Pembayaran ulang tidak diperlukan.' });
+        }
+        if (existingOrder.totalPriceIDR || existingOrder.totalPrice) {
+          numericAmount = Number(existingOrder.totalPriceIDR || existingOrder.totalPrice);
+        }
+      } else {
+        // Register initial order in DB with PENDING_PAYMENT status
+        existingOrder = {
+          id: String(orderId),
+          bookingCode: String(orderId),
+          tripId: 'General',
+          tripTitle: description || 'SmartJourney Booking',
+          batchId: '',
+          fullName: customerName || 'Customer',
+          customerName: customerName || 'Customer',
+          email: customerEmail || 'customer@example.com',
+          customerEmail: customerEmail || 'customer@example.com',
+          phone: customerPhone || 'N/A',
+          customerPhone: customerPhone || 'N/A',
+          participantsCount: 1,
+          participantsNames: [customerName || 'Customer'],
+          proofOfPayment: 'ARTOPAY_GATEWAY',
+          status: 'Pending',
+          paymentStatus: 'Pending',
+          totalPrice: numericAmount,
+          totalPriceIDR: numericAmount,
+          createdAt: new Date().toISOString()
+        };
+        db.bookings.push(existingOrder);
+        existingOrderIndex = db.bookings.length - 1;
+        writeDB(db);
+      }
+
+      const endpoint = `${baseUrl.replace(/\/+$/, '')}/v1.1/payment-intents`;
+      console.log(`[ArtoPay Backend] Creating Official Payment Intent via ${endpoint} for Order: ${orderId}, Amount: ${numericAmount} ${currency}`);
 
       const formattedAmount = Number(numericAmount).toFixed(2);
       const requestBody = JSON.stringify({
         amount: formattedAmount,
         currency: currency || 'IDR',
         orderId: String(orderId),
-        order_id: String(orderId),
-        description: req.body.description || `Payment for order ${orderId}`,
-        customerId: req.body.customerId || `cust_${String(orderId).replace(/[^a-zA-Z0-9]/g, '_')}`,
-        metadata: req.body.metadata || {}
+        description: description || `Payment for order ${orderId}`,
+        customerId: customerId || `cust_${String(orderId).replace(/[^a-zA-Z0-9]/g, '_')}`,
+        metadata: metadata || {}
       });
 
-      let response: Response | null = null;
-      let lastErrorText = '';
+      const candidateHeaders = {
+        'Content-Type': 'application/json',
+        'X-Secret-Key': secretKey
+      };
 
-      for (const url of candidateUrls) {
-        try {
-          console.log(`[ArtoPay Backend] Attempting request to: ${url}`);
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Secret-Key': secretKey,
-              'Authorization': `Bearer ${secretKey}`
-            },
-            body: requestBody
-          });
+      console.log(`[ArtoPay Backend] Sending Payment Intent POST to ${endpoint} with X-Secret-Key authentication`);
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: candidateHeaders,
+        body: requestBody
+      });
 
-          if (res.ok) {
-            response = res;
-            break;
-          } else {
-            lastErrorText = await res.text();
-            console.warn(`[ArtoPay Backend] Request to ${url} returned ${res.status}:`, lastErrorText);
-          }
-        } catch (fetchErr: any) {
-          console.warn(`[ArtoPay Backend] Request to ${url} failed with network error:`, fetchErr.message);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[ArtoPay API Gateway Error ${response.status}]:`, errorText);
+
+        let userFriendlyError = `Gagal membuat transaksi ArtoPay (${response.status}). Periksa kredensial API key atau koneksi ArtoPay.`;
+
+        if (response.status === 401) {
+          userFriendlyError = 'Autentikasi ArtoPay gagal (401 Unauthorized). Silakan periksa kembali ARTOPAY_SECRET_KEY di Environment Variables Vercel/Server Anda.';
+        } else if (response.status === 403) {
+          userFriendlyError = 'Akses ArtoPay ditolak (403 Forbidden). Pastikan IP server atau domain Anda diizinkan di dashboard ArtoPay.';
         }
-      }
 
-      if (!response || !response.ok) {
-        console.warn('[ArtoPay Backend] All API endpoint attempts failed or unauthorized. Falling back to Demo Simulation Mode so checkout remains functional.');
-        const mockPaymentId = `pay_${orderId}_${Math.floor(100000 + Math.random() * 900000)}`;
-        return res.json({
-          id: mockPaymentId,
-          paymentId: mockPaymentId,
-          clientSecret: `sec_${Math.random().toString(36).substring(2, 12)}`,
-          customerToken: `cust_${Math.random().toString(36).substring(2, 12)}`,
-          publicKey: defaultPublicKey,
-          orderId: orderId,
-          sandbox: true,
-          isDemo: true,
-          message: 'ArtoPay API key authentication failed or environment mismatch. Operating in ArtoPay Sandbox Demo Mode for seamless testing.',
-          details: lastErrorText
+        return res.status(response.status >= 400 && response.status < 600 ? response.status : 500).json({
+          error: userFriendlyError,
+          details: errorText
         });
       }
 
       const data: any = await response.json();
-      console.log('[ArtoPay Backend] Payment Intent Response:', data);
+      console.log('[ArtoPay API Gateway Response]:', data);
 
       const resData = data.responseData || data;
 
+      const paymentId = resData.id || resData.paymentId;
+      const secret = resData.secret || resData.clientSecret;
+      const customerToken = resData.customerToken;
+      const checkoutUrl = resData.checkoutUrl || resData.paymentUrl || resData.redirectUrl;
+
+      // Update DB with active paymentIntentId
+      if (existingOrderIndex !== -1 && db.bookings[existingOrderIndex]) {
+        db.bookings[existingOrderIndex].paymentIntentId = paymentId;
+        db.bookings[existingOrderIndex].paymentStatus = 'Pending';
+        db.bookings[existingOrderIndex].status = 'Pending';
+        writeDB(db);
+      }
+
       return res.json({
-        id: resData.id || resData.paymentId || resData.payment_id,
-        paymentId: resData.id || resData.paymentId || resData.payment_id,
-        clientSecret: resData.secret || resData.clientSecret || resData.payment_secret || resData.client_secret,
-        customerToken: resData.customerToken || resData.customer_token,
-        publicKey: resData.publicKey || resData.clientKey || defaultPublicKey,
-        orderId: orderId,
-        sandbox: isSandbox,
-        isDemo: false
+        success: true,
+        id: paymentId,
+        paymentId: paymentId,
+        secret: secret,
+        clientSecret: secret,
+        customerToken: customerToken,
+        checkoutUrl: checkoutUrl,
+        orderId: String(orderId),
+        publicKey: publicKey || resData.publicKey || ''
       });
+
     } catch (error: any) {
-      console.error('[ArtoPay Backend] Server handler exception caught:', error);
-      const fallbackOrderId = req.body?.orderId || `SJ-${Math.floor(100000 + Math.random() * 900000)}`;
-      const fallbackPaymentId = `pay_${fallbackOrderId}_${Math.floor(100000 + Math.random() * 900000)}`;
-      const fallbackPublicKey = process.env.VITE_ARTOPAY_PUBLIC_KEY || process.env.ARTOPAY_PUBLIC_KEY || 'pk_41cb9f2fd802ef417de4e82f8c32a80d356a02cdf32b52e68ad0';
-      
-      return res.status(200).json({
-        id: fallbackPaymentId,
-        paymentId: fallbackPaymentId,
-        clientSecret: `sec_${Math.random().toString(36).substring(2, 12)}`,
-        customerToken: `cust_${Math.random().toString(36).substring(2, 12)}`,
-        publicKey: fallbackPublicKey,
-        orderId: String(fallbackOrderId),
-        sandbox: true,
-        isDemo: true,
-        message: 'Resilient fallback triggered. Operating in ArtoPay Sandbox Mode.'
+      console.error('[ArtoPay Payment Intent Exception]:', error);
+      return res.status(500).json({
+        error: 'Terjadi kesalahan sistem saat menghubungi ArtoPay Payment Gateway.',
+        details: error.message
       });
+    }
+  });
+
+  // Official ArtoPay Webhook / Callback Handler Endpoint
+  app.post(['/api/artopay/webhook', '/artopay/webhook'], (req, res) => {
+    try {
+      const body = req.body || {};
+      console.log('[ArtoPay Webhook Callback Received]:', JSON.stringify(body));
+
+      const orderId = body.orderId || body.order_id || body.orderID || body.metadata?.orderId;
+      const paymentId = body.id || body.paymentId || body.payment_id || body.transaction_id;
+      const rawStatus = String(body.status || body.transaction_status || body.payment_status || '').toUpperCase();
+
+      if (!orderId && !paymentId) {
+        return res.status(400).json({ error: 'Missing orderId or paymentId in webhook payload' });
+      }
+
+      const db = readDB();
+      if (!db.bookings) db.bookings = [];
+
+      const index = db.bookings.findIndex(b =>
+        (orderId && (b.bookingCode === orderId || b.id === orderId)) ||
+        (paymentId && b.paymentIntentId === paymentId)
+      );
+
+      if (index === -1) {
+        console.warn(`[ArtoPay Webhook] Order ${orderId || paymentId} not found in database.`);
+        return res.status(200).json({ success: true, message: 'Webhook received but order not in DB.' });
+      }
+
+      const booking = db.bookings[index];
+
+      // IDEMPOTENCY CHECK: If already confirmed and paid, do not re-process!
+      if (booking.paymentStatus === 'Paid' && booking.status === 'Confirmed') {
+        console.log(`[ArtoPay Webhook IDEMPOTENT] Order ${orderId} is already Paid & Confirmed.`);
+        return res.status(200).json({
+          success: true,
+          message: 'Order status is already Paid (Idempotent call).'
+        });
+      }
+
+      const successStatuses = ['SUCCESS', 'PAID', 'SETTLEMENT', 'COMPLETED', '00', 'SUCCESSFUL', 'APPROVED'];
+      const failureStatuses = ['FAILED', 'CANCELLED', 'DENIED', 'EXPIRED', 'EXPIRE', 'REJECTED'];
+
+      if (successStatuses.includes(rawStatus)) {
+        booking.paymentStatus = 'Paid';
+        booking.status = 'Confirmed';
+        booking.paidAt = new Date().toISOString();
+        booking.paymentId = paymentId || booking.paymentIntentId;
+        console.log(`[ArtoPay Webhook SUCCESS] Order ${orderId} status set to PAID & CONFIRMED.`);
+      } else if (failureStatuses.includes(rawStatus)) {
+        booking.paymentStatus = (rawStatus === 'EXPIRED' || rawStatus === 'EXPIRE') ? 'Expired' : 'Failed';
+        booking.status = 'Rejected';
+        console.log(`[ArtoPay Webhook FAILURE] Order ${orderId} status set to ${booking.paymentStatus}.`);
+
+        // Restore batch seats if applicable
+        if (booking.batchId) {
+          const bIdx = db.batches.findIndex(b => b.id === booking.batchId);
+          if (bIdx !== -1) {
+            db.batches[bIdx].availableSeats += (booking.participantsCount || 1);
+            if (db.batches[bIdx].availableSeats > 0) {
+              db.batches[bIdx].status = 'Open';
+            }
+          }
+        }
+      } else {
+        booking.paymentStatus = 'Pending';
+        booking.status = 'Pending';
+      }
+
+      db.bookings[index] = booking;
+      writeDB(db);
+
+      return res.status(200).json({
+        success: true,
+        orderId: booking.bookingCode || booking.id,
+        paymentStatus: booking.paymentStatus,
+        orderStatus: booking.status
+      });
+
+    } catch (error: any) {
+      console.error('[ArtoPay Webhook Error]:', error);
+      return res.status(500).json({ error: 'Webhook processing error', details: error.message });
+    }
+  });
+
+  // Server-verified Payment Status Query Endpoint (Polling & Verification)
+  app.get(['/api/orders/:orderId/payment-status', '/api/artopay/status/:orderId'], async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const db = readDB();
+      if (!db.bookings) db.bookings = [];
+
+      const booking = db.bookings.find(b => b.bookingCode === orderId || b.id === orderId || b.paymentIntentId === orderId);
+
+      if (!booking) {
+        return res.status(404).json({
+          found: false,
+          paymentStatus: 'Pending',
+          orderStatus: 'Pending',
+          message: 'Order ID tidak ditemukan.'
+        });
+      }
+
+      // Out-of-band active status check against ArtoPay API if still pending
+      if (booking.paymentStatus === 'Pending' && booking.paymentIntentId) {
+        const rawSecretKey = process.env.ARTOPAY_SECRET_KEY || '';
+        const secretKey = rawSecretKey.replace(/^["']|["']$/g, '').trim();
+
+        if (secretKey) {
+          const envMode = process.env.ARTOPAY_ENV || (process.env.ARTOPAY_SANDBOX === 'false' ? 'production' : 'sandbox');
+          const baseUrl = process.env.ARTOPAY_API_BASE_URL || (envMode === 'production' ? 'https://api.arto-pay.com' : 'https://api-sandbox.arto-pay.com');
+          const checkUrl = `${baseUrl.replace(/\/+$/, '')}/v1.1/payment-intents/${booking.paymentIntentId}`;
+
+          try {
+            const verifyRes = await fetch(checkUrl, {
+              headers: {
+                'Authorization': `Bearer ${secretKey}`,
+                'X-Secret-Key': secretKey
+              }
+            });
+
+            if (verifyRes.ok) {
+              const statusData: any = await verifyRes.json();
+              const resData = statusData.responseData || statusData;
+              const remoteStatus = String(resData.status || resData.transaction_status || '').toUpperCase();
+
+              if (['SUCCESS', 'PAID', 'SETTLEMENT', 'COMPLETED', '00'].includes(remoteStatus)) {
+                booking.paymentStatus = 'Paid';
+                booking.status = 'Confirmed';
+                booking.paidAt = new Date().toISOString();
+                writeDB(db);
+              } else if (['FAILED', 'CANCELLED', 'EXPIRED'].includes(remoteStatus)) {
+                booking.paymentStatus = remoteStatus === 'EXPIRED' ? 'Expired' : 'Failed';
+                booking.status = 'Rejected';
+                writeDB(db);
+              }
+            }
+          } catch (vErr) {
+            console.warn('[Server Status Check Warning]:', vErr);
+          }
+        }
+      }
+
+      return res.json({
+        found: true,
+        orderId: booking.bookingCode || booking.id,
+        paymentStatus: booking.paymentStatus || 'Pending',
+        orderStatus: booking.status || 'Pending',
+        paidAt: booking.paidAt || null,
+        booking
+      });
+
+    } catch (error: any) {
+      return res.status(500).json({ error: 'Failed to retrieve payment status', details: error.message });
     }
   });
 
