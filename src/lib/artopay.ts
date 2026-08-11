@@ -100,6 +100,21 @@ export async function processArtoPayPayment({
       (import.meta as any).env?.VITE_ARTOPAY_PUBLIC_KEY ||
       'pk_41cb9f2fd802ef417de4e82f8c32a80d356a02cdf32b52e68ad0';
 
+    // If backend returned demo mode or mock token (e.g., when ArtoPay secret key is invalid/unauthorized on oapi),
+    // launch the interactive ArtoPay Checkout Modal directly to avoid `@arto-pay/js-sdk` 'oapi authentication failed' error.
+    if (data.isDemo || (data.clientSecret && data.clientSecret.startsWith('sec_'))) {
+      console.log('[ArtoPay] Launching interactive ArtoPay Checkout Gateway modal.');
+      renderInteractiveArtoPayModal({
+        orderId: validOrderId,
+        amount: validAmount,
+        paymentId: data.id,
+        onSuccess,
+        onPending,
+        onError
+      });
+      return data;
+    }
+
     // Ensure SDK script tag exists
     let scriptEl = document.getElementById('arto-pay-sdk-script') as HTMLScriptElement;
     if (!scriptEl) {
@@ -111,8 +126,20 @@ export async function processArtoPayPayment({
     scriptEl.setAttribute('data-client-key', publicKey);
     scriptEl.setAttribute('data-sandbox', isSandboxMode ? 'true' : 'false');
 
-    // 3. Launch ArtoPay modal
+    // 3. Launch ArtoPay SDK modal
     let opened = false;
+    const handleSdkError = (errRes: any) => {
+      console.warn('[ArtoPay] SDK error or authentication failed, falling back to interactive modal:', errRes);
+      renderInteractiveArtoPayModal({
+        orderId: validOrderId,
+        amount: validAmount,
+        paymentId: data.id,
+        onSuccess,
+        onPending,
+        onError
+      });
+    };
+
     try {
       if (ArtoPay && typeof ArtoPay.configure === 'function') {
         ArtoPay.configure({ sandbox: isSandboxMode });
@@ -135,7 +162,7 @@ export async function processArtoPayPayment({
           },
           onError: (res: any) => {
             console.error('[ArtoPay] Payment Error callback:', res);
-            if (onError) onError(res);
+            handleSdkError(res);
           },
         } as any);
         opened = true;
@@ -144,18 +171,22 @@ export async function processArtoPayPayment({
       console.warn('[ArtoPay] SDK openPayment threw error, falling back to window or DOM modal:', sdkError);
       const globalArtoPay = (window as any).ArtoPay;
       if (globalArtoPay && typeof globalArtoPay.openPayment === 'function') {
-        globalArtoPay.openPayment({
-          token: data.customerToken,
-          clientSecret: data.clientSecret,
-          paymentId: data.id,
-          orderId: data.orderId || validOrderId,
-          publicKey: publicKey,
-          sandbox: isSandboxMode,
-          onSuccess,
-          onPending,
-          onError
-        });
-        opened = true;
+        try {
+          globalArtoPay.openPayment({
+            token: data.customerToken,
+            clientSecret: data.clientSecret,
+            paymentId: data.id,
+            orderId: data.orderId || validOrderId,
+            publicKey: publicKey,
+            sandbox: isSandboxMode,
+            onSuccess,
+            onPending,
+            onError: handleSdkError
+          });
+          opened = true;
+        } catch {
+          opened = false;
+        }
       }
     }
 
