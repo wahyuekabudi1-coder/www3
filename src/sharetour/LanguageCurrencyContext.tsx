@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-export type Language = "en" | "zh";
+export type Language = "en" | "id" | "zh";
 export type Currency = "IDR" | "CNY" | "USD";
 
 interface LanguageCurrencyContextProps {
