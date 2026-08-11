@@ -588,7 +588,7 @@ app.get('/sitemap.xml', (req, res) => {
       }
 
       const envMode = process.env.ARTOPAY_ENV || (process.env.ARTOPAY_SANDBOX === 'false' ? 'production' : 'sandbox');
-      const baseUrl = process.env.ARTOPAY_API_BASE_URL || (envMode === 'production' ? 'https://api.arto-pay.com' : 'https://api-sandbox.arto-pay.com');
+      const baseUrl = process.env.ARTOPAY_API_BASE_URL || (envMode === 'production' ? 'https://api.artopay.online' : 'https://api-sandbox.arto-pay.com');
 
       const rawPublicKey = process.env.VITE_ARTOPAY_PUBLIC_KEY || process.env.ARTOPAY_PUBLIC_KEY || '';
       const publicKey = rawPublicKey.replace(/^["']|["']$/g, '').trim();
@@ -825,13 +825,12 @@ app.get('/sitemap.xml', (req, res) => {
 
         if (secretKey) {
           const envMode = process.env.ARTOPAY_ENV || (process.env.ARTOPAY_SANDBOX === 'false' ? 'production' : 'sandbox');
-          const baseUrl = process.env.ARTOPAY_API_BASE_URL || (envMode === 'production' ? 'https://api.arto-pay.com' : 'https://api-sandbox.arto-pay.com');
+          const baseUrl = process.env.ARTOPAY_API_BASE_URL || (envMode === 'production' ? 'https://api.artopay.online' : 'https://api-sandbox.arto-pay.com');
           const checkUrl = `${baseUrl.replace(/\/+$/, '')}/v1.1/payment-intents/${booking.paymentIntentId}`;
 
           try {
             const verifyRes = await fetch(checkUrl, {
               headers: {
-                'Authorization': `Bearer ${secretKey}`,
                 'X-Secret-Key': secretKey
               }
             });

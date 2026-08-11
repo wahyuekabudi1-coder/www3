@@ -254,12 +254,12 @@ export default function AirportTransferView() {
         amount: confirmedBooking.totalPriceIDR,
         currency: 'IDR',
         onSuccess: (res) => {
-          console.log('ArtoPay payment success!', res);
-          setConfirmedBooking((prev: any) => prev ? { ...prev, paymentStatus: 'Paid' } : null);
+          console.log('ArtoPay payment event completed:', res);
+          window.location.hash = '#/bookings';
         },
         onPending: (res) => {
-          console.log('ArtoPay payment pending!', res);
-          setConfirmedBooking((prev: any) => prev ? { ...prev, paymentStatus: 'Pending' } : null);
+          console.log('ArtoPay payment pending event:', res);
+          window.location.hash = '#/bookings';
         },
         onError: (err) => {
           console.error('ArtoPay payment error/cancelled!', err);
