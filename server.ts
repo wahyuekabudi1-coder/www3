@@ -149,32 +149,34 @@ function recalculateBatchSeats(db: DatabaseState): void {
   });
 }
 
+let memoryDB: DatabaseState | null = null;
+
 function readDB(): DatabaseState {
-  try {
-    if (!fs.existsSync(DB_PATH)) {
-      const parentDir = path.dirname(DB_PATH);
-      if (!fs.existsSync(parentDir)) {
-        fs.mkdirSync(parentDir, { recursive: true });
-      }
-      recalculateBatchSeats(defaultDB);
-      fs.writeFileSync(DB_PATH, JSON.stringify(defaultDB, null, 2), 'utf8');
-      return defaultDB;
-    }
-    const raw = fs.readFileSync(DB_PATH, 'utf8');
-    const db = JSON.parse(raw) as DatabaseState;
-    recalculateBatchSeats(db);
-    return db;
-  } catch (error) {
-    console.error('Error reading database file, returning default map:', error);
-    recalculateBatchSeats(defaultDB);
-    return defaultDB;
+  if (memoryDB) {
+    return memoryDB;
   }
+  try {
+    if (fs.existsSync(DB_PATH)) {
+      const raw = fs.readFileSync(DB_PATH, 'utf8');
+      memoryDB = JSON.parse(raw) as DatabaseState;
+      recalculateBatchSeats(memoryDB!);
+      return memoryDB!;
+    }
+  } catch (error) {
+    console.error('Error reading database file, using default map:', error);
+  }
+  memoryDB = JSON.parse(JSON.stringify(defaultDB));
+  recalculateBatchSeats(memoryDB!);
+  return memoryDB!;
 }
 
 function writeDB(data: DatabaseState) {
+  memoryDB = data;
   try {
     recalculateBatchSeats(data);
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+    if (!process.env.VERCEL) {
+      fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+    }
   } catch (error) {
     console.error('Error writing database file:', error);
   }
@@ -182,107 +184,117 @@ function writeDB(data: DatabaseState) {
 
 const app = express();
 
-async function startServer() {
-  app.use(express.json({ limit: '15mb' }));
+// CORS Middleware for Vercel & Cross-Origin Requests
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Secret-Key');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
-  // -------------------------------------------------------------
-  // SEO Crawlers Endpoints: Robots.txt & Dynamic Sitemap.xml
-  // -------------------------------------------------------------
+app.use(express.json({ limit: '15mb' }));
 
-  app.get('/robots.txt', (req, res) => {
-    res.type('text/plain');
-    res.send(`User-agent: *
+// -------------------------------------------------------------
+// SEO Crawlers Endpoints: Robots.txt & Dynamic Sitemap.xml
+// -------------------------------------------------------------
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send(`User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /api/
 
 Sitemap: https://smartjourney.co.id/sitemap.xml
 `);
-  });
+});
 
-  app.get('/sitemap.xml', (req, res) => {
-    res.type('application/xml');
-    const baseUrl = 'https://smartjourney.co.id';
-    const currentDate = new Date().toISOString().split('T')[0];
+app.get('/sitemap.xml', (req, res) => {
+  res.type('application/xml');
+  const baseUrl = 'https://smartjourney.co.id';
+  const currentDate = new Date().toISOString().split('T')[0];
 
-    let tripsXml = '';
-    try {
-      const db = readDB();
-      if (db && db.trips) {
-        tripsXml = db.trips.map((t: any) => `
-  <url>
-    <loc>${baseUrl}/#/tours?id=${t.id || t.slug}</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>`).join('');
-      }
-    } catch {
-      // ignore
+  let tripsXml = '';
+  try {
+    const db = readDB();
+    if (db && db.trips) {
+      tripsXml = db.trips.map((t: any) => `
+<url>
+  <loc>${baseUrl}/#/tours?id=${t.id || t.slug}</loc>
+  <lastmod>${currentDate}</lastmod>
+  <changefreq>daily</changefreq>
+  <priority>0.8</priority>
+</url>`).join('');
     }
+  } catch {
+    // ignore
+  }
 
-    const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>
+  const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-  <url>
-    <loc>${baseUrl}/</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#/tours</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#/car-rental</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#/share-tour</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#/airport</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#/taxi</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#/about</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#/partnerships</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/#/bookings</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.5</priority>
-  </url>${tripsXml}
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<url>
+  <loc>${baseUrl}/</loc>
+  <lastmod>${currentDate}</lastmod>
+  <changefreq>daily</changefreq>
+  <priority>1.0</priority>
+</url>
+<url>
+  <loc>${baseUrl}/#/tours</loc>
+  <lastmod>${currentDate}</lastmod>
+  <changefreq>daily</changefreq>
+  <priority>0.9</priority>
+</url>
+<url>
+  <loc>${baseUrl}/#/car-rental</loc>
+  <lastmod>${currentDate}</lastmod>
+  <changefreq>daily</changefreq>
+  <priority>0.9</priority>
+</url>
+<url>
+  <loc>${baseUrl}/#/share-tour</loc>
+  <lastmod>${currentDate}</lastmod>
+  <changefreq>daily</changefreq>
+  <priority>0.85</priority>
+</url>
+<url>
+  <loc>${baseUrl}/#/airport</loc>
+  <lastmod>${currentDate}</lastmod>
+  <changefreq>weekly</changefreq>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>${baseUrl}/#/taxi</loc>
+  <lastmod>${currentDate}</lastmod>
+  <changefreq>weekly</changefreq>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>${baseUrl}/#/about</loc>
+  <lastmod>${currentDate}</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.6</priority>
+</url>
+<url>
+  <loc>${baseUrl}/#/partnerships</loc>
+  <lastmod>${currentDate}</lastmod>
+  <changefreq>weekly</changefreq>
+  <priority>0.7</priority>
+</url>
+<url>
+  <loc>${baseUrl}/#/bookings</loc>
+  <lastmod>${currentDate}</lastmod>
+  <changefreq>daily</changefreq>
+  <priority>0.5</priority>
+</url>${tripsXml}
 </urlset>`;
 
-    res.send(sitemapContent);
-  });
+  res.send(sitemapContent);
+});
 
   // -------------------------------------------------------------
   // Share Tour Database & Core API Routes
@@ -549,7 +561,7 @@ Sitemap: https://smartjourney.co.id/sitemap.xml
     });
   });
 
-  app.post('/api/artopay/payment-intent', async (req, res) => {
+  app.post(['/api/artopay/payment-intent', '/artopay/payment-intent'], async (req, res) => {
     try {
       let { orderId, amount, currency = 'IDR' } = req.body || {};
 
@@ -692,14 +704,17 @@ Sitemap: https://smartjourney.co.id/sitemap.xml
   // Frontend Asset Handling (Vite / Static production)
   // -------------------------------------------------------------
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     // Development Mode: Use Vite Dev Server Middleware
     console.log('Running in Development mode. Mounting Vite Dev Server Middleware...');
-    const vite = await createViteServer({
+    createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
+    }).then(vite => {
+      app.use(vite.middlewares);
+    }).catch(err => {
+      console.error('Failed to create Vite server middleware:', err);
     });
-    app.use(vite.middlewares);
   } else {
     // Production Mode: Serve Compiled Frontend Assets from /dist
     console.log('Running in Production mode. Serving static assets from /dist...');
@@ -715,8 +730,5 @@ Sitemap: https://smartjourney.co.id/sitemap.xml
       console.log(`[SmartJourney Fullstack Engine] Server listening on http://0.0.0.0:${PORT}`);
     });
   }
-}
-
-startServer();
 
 export default app;
