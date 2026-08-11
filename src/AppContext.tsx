@@ -10,8 +10,8 @@ import { TOURS, REVIEWS } from './data';
 interface AppContextProps {
   activePage: ActivePage;
   setPage: (page: ActivePage) => void;
-  currency: 'USD' | 'IDR';
-  setCurrency: (currency: 'USD' | 'IDR') => void;
+  currency: 'USD' | 'IDR' | 'CNY';
+  setCurrency: (currency: 'USD' | 'IDR' | 'CNY') => void;
   isPrivacyOpen: boolean;
   setPrivacyOpen: (open: boolean) => void;
   isTermsOpen: boolean;
@@ -94,7 +94,14 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activePage, setActivePageState] = useState<ActivePage>('home');
-  const [currency, setCurrency] = useState<'USD' | 'IDR'>('USD');
+  const [currency, setCurrencyState] = useState<'USD' | 'IDR' | 'CNY'>(() => {
+    return (localStorage.getItem('sj_currency') as 'USD' | 'IDR' | 'CNY') || 'IDR';
+  });
+
+  const setCurrency = (curr: 'USD' | 'IDR' | 'CNY') => {
+    setCurrencyState(curr);
+    localStorage.setItem('sj_currency', curr);
+  };
   const [isPrivacyOpen, setPrivacyOpen] = useState(false);
   const [isTermsOpen, setTermsOpen] = useState(false);
   const [isComingSoonOpen, setComingSoonOpen] = useState(false);
@@ -583,8 +590,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const formatPrice = (usdPrice: number, idrPrice: number) => {
     if (currency === 'USD') {
       return `$${usdPrice}`;
+    } else if (currency === 'CNY') {
+      const cny = Math.round(usdPrice * 7.2);
+      return `¥${cny.toLocaleString('zh-CN')}`;
     } else {
-      // Format IDR smoothly (e.g. IDR 1.2M or full format)
+      // Format IDR smoothly
       if (idrPrice >= 1000000) {
         return `IDR ${(idrPrice / 1000000).toFixed(1)}M`;
       }

@@ -15,7 +15,7 @@ interface LanguageCurrencyContextProps {
 const LanguageCurrencyContext = createContext<LanguageCurrencyContextProps | undefined>(undefined);
 
 // Core translation dictionary for outstanding localized translation
-const dictionary: Record<string, Record<Language, string>> = {
+const dictionary: Record<string, Partial<Record<Language, string>>> = {
   // Navigation / Header
   "Explore Trips": {
     en: "Explore Trips",
@@ -853,7 +853,10 @@ export const LanguageCurrencyProvider: React.FC<{ children: React.ReactNode }> =
     
     // Check main static dictionary
     if (dictionary[cleanKey]) {
-      return dictionary[cleanKey][language];
+      const val = dictionary[cleanKey][language];
+      if (val) return val;
+      if (language === "id") return cleanKey;
+      return dictionary[cleanKey]["en"] || key;
     }
 
     // Secondary deep dynamic lookup (such as backend database content)

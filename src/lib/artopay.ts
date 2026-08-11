@@ -101,7 +101,8 @@ export async function processArtoPayPayment({
       'pk_41cb9f2fd802ef417de4e82f8c32a80d356a02cdf32b52e68ad0';
 
     // If backend or ArtoPay API returned a hosted checkout URL (redirect link), redirect immediately!
-    const directCheckoutUrl = data.checkoutUrl || data.checkout_url || data.paymentUrl || data.payment_url || data.redirectUrl || data.redirect_url;
+    const dataAny = data as any;
+    const directCheckoutUrl = dataAny?.checkoutUrl || dataAny?.checkout_url || dataAny?.paymentUrl || dataAny?.payment_url || dataAny?.redirectUrl || dataAny?.redirect_url;
     if (directCheckoutUrl) {
       console.log('[ArtoPay] Direct payment gateway link detected, redirecting:', directCheckoutUrl);
       window.location.href = directCheckoutUrl;

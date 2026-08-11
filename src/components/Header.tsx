@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../AppContext';
-import { Menu, X, ChevronDown, Calendar, Globe, Plane, Car, Route, Star, Compass, Handshake, Share2, Users } from 'lucide-react';
+import { useLanguageCurrency } from '../sharetour/LanguageCurrencyContext';
+import { Menu, X, ChevronDown, Calendar, Globe, Plane, Car, Route, Star, Compass, Handshake, Share2, Users, Check } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 
 export default function Header() {
-  const { activePage, setPage, currency, setCurrency, bookings } = useApp();
+  const { activePage, setPage, bookings } = useApp();
+  const { language, setLanguage, currency, setCurrency } = useLanguageCurrency();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
 
   // Monitor scroll to trigger header background blur
@@ -187,29 +190,89 @@ export default function Header() {
             </button>
           </nav>
 
-          {/* Currency Switcher & CTA */}
-          <div className="hidden md:flex items-center space-x-4">
+          {/* Language & Currency Switchers */}
+          <div className="hidden md:flex items-center space-x-2.5">
+            {/* Language Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsLangOpen(!isLangOpen)}
+                className="flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-neutral-100 hover:bg-neutral-200/80 border border-neutral-200 text-neutral-800 transition-all cursor-pointer"
+              >
+                <Globe className="h-3.5 w-3.5 text-amber-600" />
+                <span className="uppercase tracking-wide">
+                  {language === 'en' ? 'EN' : language === 'id' ? 'ID' : 'ZH'}
+                </span>
+                <ChevronDown className="h-3 w-3 text-neutral-500" />
+              </button>
+
+              <AnimatePresence>
+                {isLangOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="absolute right-0 mt-2 w-28 rounded-2xl bg-white border border-neutral-200 shadow-xl py-1 z-50 overflow-hidden"
+                  >
+                    <button
+                      onClick={() => { setLanguage('en'); setIsLangOpen(false); }}
+                      className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-amber-50 cursor-pointer ${language === 'en' ? 'font-black text-amber-600 bg-amber-50/60' : 'text-neutral-700'}`}
+                    >
+                      <span className="flex items-center gap-1.5 font-bold">🇺🇸 EN</span>
+                      {language === 'en' && <Check className="h-3.5 w-3.5 text-amber-600" />}
+                    </button>
+                    <button
+                      onClick={() => { setLanguage('id'); setIsLangOpen(false); }}
+                      className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-amber-50 cursor-pointer ${language === 'id' ? 'font-black text-amber-600 bg-amber-50/60' : 'text-neutral-700'}`}
+                    >
+                      <span className="flex items-center gap-1.5 font-bold">🇮🇩 ID</span>
+                      {language === 'id' && <Check className="h-3.5 w-3.5 text-amber-600" />}
+                    </button>
+                    <button
+                      onClick={() => { setLanguage('zh'); setIsLangOpen(false); }}
+                      className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-amber-50 cursor-pointer ${language === 'zh' ? 'font-black text-amber-600 bg-amber-50/60' : 'text-neutral-700'}`}
+                    >
+                      <span className="flex items-center gap-1.5 font-bold">🇨🇳 ZH</span>
+                      {language === 'zh' && <Check className="h-3.5 w-3.5 text-amber-600" />}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             {/* Currency Switcher */}
-            <div className="flex items-center bg-neutral-100 border border-neutral-200 p-1 rounded-full">
+            <div className="flex items-center bg-neutral-100 border border-neutral-200 p-0.5 rounded-full">
               <button
                 onClick={() => setCurrency('USD')}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
+                className={`px-2.5 py-0.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
                   currency === 'USD'
-                    ? 'bg-amber-500 text-neutral-950 shadow-sm'
+                    ? 'bg-amber-500 text-neutral-950 shadow-sm font-black'
                     : 'text-neutral-500 hover:text-neutral-900'
                 }`}
+                title="USD ($)"
               >
-                USD ($)
+                USD
               </button>
               <button
                 onClick={() => setCurrency('IDR')}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
+                className={`px-2.5 py-0.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
                   currency === 'IDR'
-                    ? 'bg-amber-500 text-neutral-950 shadow-sm'
+                    ? 'bg-amber-500 text-neutral-950 shadow-sm font-black'
                     : 'text-neutral-500 hover:text-neutral-900'
                 }`}
+                title="IDR (Rp)"
               >
-                IDR (Rp)
+                IDR
+              </button>
+              <button
+                onClick={() => setCurrency('CNY')}
+                className={`px-2.5 py-0.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
+                  currency === 'CNY'
+                    ? 'bg-amber-500 text-neutral-950 shadow-sm font-black'
+                    : 'text-neutral-500 hover:text-neutral-900'
+                }`}
+                title="CNY (¥)"
+              >
+                CNY
               </button>
             </div>
           </div>
@@ -314,6 +377,85 @@ export default function Header() {
               >
                 About
               </button>
+
+              {/* Mobile Language & Currency Selector Section */}
+              <div className="border-t border-neutral-100 pt-3 my-2 space-y-3">
+                <div className="px-1">
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">
+                    Language / Bahasa
+                  </span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      onClick={() => setLanguage('en')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold text-center border transition-all cursor-pointer ${
+                        language === 'en'
+                          ? 'bg-amber-500 text-neutral-950 border-amber-500 font-black shadow-sm'
+                          : 'bg-neutral-50 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
+                      }`}
+                    >
+                      🇺🇸 EN
+                    </button>
+                    <button
+                      onClick={() => setLanguage('id')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold text-center border transition-all cursor-pointer ${
+                        language === 'id'
+                          ? 'bg-amber-500 text-neutral-950 border-amber-500 font-black shadow-sm'
+                          : 'bg-neutral-50 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
+                      }`}
+                    >
+                      🇮🇩 ID
+                    </button>
+                    <button
+                      onClick={() => setLanguage('zh')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold text-center border transition-all cursor-pointer ${
+                        language === 'zh'
+                          ? 'bg-amber-500 text-neutral-950 border-amber-500 font-black shadow-sm'
+                          : 'bg-neutral-50 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
+                      }`}
+                    >
+                      🇨🇳 ZH
+                    </button>
+                  </div>
+                </div>
+
+                <div className="px-1">
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">
+                    Currency / Mata Uang
+                  </span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      onClick={() => setCurrency('USD')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold text-center border transition-all cursor-pointer ${
+                        currency === 'USD'
+                          ? 'bg-amber-500 text-neutral-950 border-amber-500 font-black shadow-sm'
+                          : 'bg-neutral-50 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
+                      }`}
+                    >
+                      USD
+                    </button>
+                    <button
+                      onClick={() => setCurrency('IDR')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold text-center border transition-all cursor-pointer ${
+                        currency === 'IDR'
+                          ? 'bg-amber-500 text-neutral-950 border-amber-500 font-black shadow-sm'
+                          : 'bg-neutral-50 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
+                      }`}
+                    >
+                      IDR
+                    </button>
+                    <button
+                      onClick={() => setCurrency('CNY')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold text-center border transition-all cursor-pointer ${
+                        currency === 'CNY'
+                          ? 'bg-amber-500 text-neutral-950 border-amber-500 font-black shadow-sm'
+                          : 'bg-neutral-50 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
+                      }`}
+                    >
+                      CNY
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               {/* No more My Bookings or Book Private Tour buttons as requested */}
             </div>

@@ -1063,27 +1063,26 @@ export default function AdminView() {
                               className={`w-full ${theme.input} border rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-white`} 
                             />
                           </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">Harga Dasar ($ USD)</label>
-                            <input 
-                              type="number" 
-                              required
-                              value={tourForm.startingPrice}
-                              onChange={(e) => setTourForm({ ...tourForm, startingPrice: Number(e.target.value) })}
-                              placeholder="$ USD" 
-                              className={`w-full ${theme.input} border rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 font-mono text-white`} 
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">Harga Dasar (Rp IDR)</label>
-                            <input 
-                              type="number" 
-                              required
-                              value={tourForm.startingPriceIDR}
-                              onChange={(e) => setTourForm({ ...tourForm, startingPriceIDR: Number(e.target.value) })}
-                              placeholder="Rp IDR" 
-                              className={`w-full ${theme.input} border rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 font-mono text-white`} 
-                            />
+                          <div className="space-y-1.5 md:col-span-2">
+                            <label className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">Harga Dasar Paket (Rupiah / Rp IDR)</label>
+                            <div className="relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-500 font-mono">Rp</span>
+                              <input 
+                                type="number" 
+                                required
+                                value={tourForm.startingPriceIDR || ''}
+                                onChange={(e) => {
+                                  const idr = Number(e.target.value);
+                                  setTourForm({ 
+                                    ...tourForm, 
+                                    startingPriceIDR: idr,
+                                    startingPrice: Math.round(idr / 16000) || 1
+                                  });
+                                }}
+                                placeholder="750000" 
+                                className={`w-full ${theme.input} border rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:border-amber-500 font-mono text-white text-sm font-extrabold`} 
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1904,7 +1903,7 @@ export default function AdminView() {
                           </button>
                         </td>
                         <td className="p-4 font-mono font-bold text-emerald-400">
-                          {formatPrice(tour.startingPrice, tour.startingPriceIDR)}
+                          Rp {(tour.startingPriceIDR || tour.startingPrice * 16000).toLocaleString('id-ID')}
                         </td>
                         <td className="p-4">
                           <span className="inline-flex items-center gap-1 text-[10px] font-mono font-black uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
