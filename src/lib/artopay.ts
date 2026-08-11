@@ -100,6 +100,14 @@ export async function processArtoPayPayment({
       (import.meta as any).env?.VITE_ARTOPAY_PUBLIC_KEY ||
       'pk_41cb9f2fd802ef417de4e82f8c32a80d356a02cdf32b52e68ad0';
 
+    // If backend or ArtoPay API returned a hosted checkout URL (redirect link), redirect immediately!
+    const directCheckoutUrl = data.checkoutUrl || data.checkout_url || data.paymentUrl || data.payment_url || data.redirectUrl || data.redirect_url;
+    if (directCheckoutUrl) {
+      console.log('[ArtoPay] Direct payment gateway link detected, redirecting:', directCheckoutUrl);
+      window.location.href = directCheckoutUrl;
+      return data;
+    }
+
     // If backend returned demo mode or mock token (e.g., when ArtoPay secret key is invalid/unauthorized on oapi),
     // launch the interactive ArtoPay Checkout Modal directly to avoid `@arto-pay/js-sdk` 'oapi authentication failed' error.
     if (data.isDemo || (data.clientSecret && data.clientSecret.startsWith('sec_'))) {
@@ -237,53 +245,53 @@ function renderInteractiveArtoPayModal({
   const formattedPrice = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
 
   overlay.innerHTML = `
-    <div className="bg-slate-900 border border-slate-800 text-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 font-sans relative overflow-hidden">
-      <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-xl bg-[#D6B16D]/20 border border-[#D6B16D]/40 flex items-center justify-center font-bold text-[#D6B16D] text-xs">
+    <div class="bg-slate-900 border border-slate-800 text-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 font-sans relative overflow-hidden">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-xl bg-[#D6B16D]/20 border border-[#D6B16D]/40 flex items-center justify-center font-bold text-[#D6B16D] text-xs">
             AP
           </div>
           <div>
-            <h3 className="text-sm font-bold tracking-wide text-slate-100">ArtoPay Gateway</h3>
-            <p className="text-[10px] text-slate-400 font-mono">ORDER: ${orderId}</p>
+            <h3 class="text-sm font-bold tracking-wide text-slate-100">ArtoPay Gateway</h3>
+            <p class="text-[10px] text-slate-400 font-mono">ORDER: ${orderId}</p>
           </div>
         </div>
-        <button id="artopay-close-btn" className="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer">✕</button>
+        <button id="artopay-close-btn" class="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer">✕</button>
       </div>
 
-      <div className="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 space-y-1">
-        <span className="text-[10px] text-slate-400 font-mono uppercase block tracking-wider">Total Tagihan</span>
-        <div className="text-xl font-extrabold text-[#D6B16D] font-mono">${formattedPrice}</div>
+      <div class="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 space-y-1">
+        <span class="text-[10px] text-slate-400 font-mono uppercase block tracking-wider">Total Tagihan</span>
+        <div class="text-xl font-extrabold text-[#D6B16D] font-mono">${formattedPrice}</div>
       </div>
 
-      <div className="space-y-2">
-        <span className="text-[11px] font-bold text-slate-300 font-mono block uppercase">Pilih Metode Pembayaran</span>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <button className="artopay-method-btn p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-[#D6B16D] text-left transition-all text-slate-200 font-semibold cursor-pointer active:scale-95" data-method="QRIS">
+      <div class="space-y-2">
+        <span class="text-[11px] font-bold text-slate-300 font-mono block uppercase">Pilih Metode Pembayaran</span>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button class="artopay-method-btn p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-[#D6B16D] text-left transition-all text-slate-200 font-semibold cursor-pointer active:scale-95" data-method="QRIS">
             📱 Instant QRIS
           </button>
-          <button className="artopay-method-btn p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-[#D6B16D] text-left transition-all text-slate-200 font-semibold cursor-pointer active:scale-95" data-method="BCA VA">
+          <button class="artopay-method-btn p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-[#D6B16D] text-left transition-all text-slate-200 font-semibold cursor-pointer active:scale-95" data-method="BCA VA">
             🏦 Virtual Account
           </button>
-          <button className="artopay-method-btn p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-[#D6B16D] text-left transition-all text-slate-200 font-semibold cursor-pointer active:scale-95" data-method="GoPay">
+          <button class="artopay-method-btn p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-[#D6B16D] text-left transition-all text-slate-200 font-semibold cursor-pointer active:scale-95" data-method="GoPay">
             💳 e-Wallet
           </button>
-          <button className="artopay-method-btn p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-[#D6B16D] text-left transition-all text-slate-200 font-semibold cursor-pointer active:scale-95" data-method="Credit Card">
+          <button class="artopay-method-btn p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-[#D6B16D] text-left transition-all text-slate-200 font-semibold cursor-pointer active:scale-95" data-method="Credit Card">
             💳 Kartu Kredit
           </button>
         </div>
       </div>
 
-      <div id="artopay-method-detail" className="hidden p-3 bg-slate-950 border border-[#D6B16D]/30 rounded-xl text-xs space-y-1 text-slate-300 font-mono">
-        <p className="text-[#D6B16D] font-bold" id="artopay-selected-method">QRIS Payment</p>
-        <p className="text-[11px] text-slate-400">Silakan selesaikan pembayaran sebelum batas waktu berakhir.</p>
+      <div id="artopay-method-detail" class="hidden p-3 bg-slate-950 border border-[#D6B16D]/30 rounded-xl text-xs space-y-1 text-slate-300 font-mono">
+        <p class="text-[#D6B16D] font-bold" id="artopay-selected-method">QRIS Payment</p>
+        <p class="text-[11px] text-slate-400">Silakan selesaikan pembayaran sebelum batas waktu berakhir.</p>
       </div>
 
-      <button id="artopay-pay-confirm" className="w-full py-3.5 rounded-xl font-mono font-extrabold text-xs uppercase tracking-widest bg-[#D6B16D] hover:bg-[#c4a05c] text-slate-950 transition-all shadow-lg cursor-pointer active:scale-[0.99]">
+      <button id="artopay-pay-confirm" class="w-full py-3.5 rounded-xl font-mono font-extrabold text-xs uppercase tracking-widest bg-[#D6B16D] hover:bg-[#c4a05c] text-slate-950 transition-all shadow-lg cursor-pointer active:scale-[0.99]">
         Bayar Sekarang (ArtoPay)
       </button>
 
-      <div className="text-[10px] text-center text-slate-500 font-mono">
+      <div class="text-[10px] text-center text-slate-500 font-mono">
         🔒 Terenkripsi 256-bit PCI-DSS Level 1 ArtoPay Gateway
       </div>
     </div>
