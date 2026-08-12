@@ -41,13 +41,31 @@ export default function BookingSuccess({ booking: initialBooking, onNavigateToTr
         currency: "IDR",
         onSuccess: async (res) => {
           setPayError("");
-          const updated = await updateBooking(booking.id, { status: "Confirmed" });
-          setBooking(updated);
+          try {
+            const check = await fetch(`/api/orders/${booking.id}/payment-status`);
+            if (check.ok) {
+              const data = await check.json();
+              if (data.booking) {
+                setBooking(data.booking);
+              }
+            }
+          } catch (e) {
+            console.warn("Status verify catch:", e);
+          }
         },
         onPending: async (res) => {
           setPayError("");
-          const updated = await updateBooking(booking.id, { status: "Pending" });
-          setBooking(updated);
+          try {
+            const check = await fetch(`/api/orders/${booking.id}/payment-status`);
+            if (check.ok) {
+              const data = await check.json();
+              if (data.booking) {
+                setBooking(data.booking);
+              }
+            }
+          } catch (e) {
+            console.warn("Status verify catch:", e);
+          }
         },
         onError: (err) => {
           if (err && err.message) {

@@ -32,8 +32,8 @@ export default function SettingsRBAC({
     whatsappContact: '+6281233445566',
     smtpHost: 'smtp.sawajayatrans.co.id',
     smtpUser: 'operations@sawajayatrans.co.id',
-    midtransClientKey: 'SB-Mid-client-vA982H1',
-    midtransServerKey: 'SB-Mid-server-zX102Y9'
+    artoPayPublicKey: 'pk_sandbox_smartjourney',
+    artoPaySecretKey: 'sk_sandbox_smartjourney'
   });
 
   // Roles permission matrix state
@@ -191,8 +191,8 @@ export default function SettingsRBAC({
                   <input
                     type="text"
                     required
-                    value={configs.midtransClientKey}
-                    onChange={(e) => setConfigs({ ...configs, midtransClientKey: e.target.value })}
+                    value={configs.artoPayPublicKey}
+                    onChange={(e) => setConfigs({ ...configs, artoPayPublicKey: e.target.value })}
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-amber-500 text-white"
                   />
                 </div>
@@ -201,8 +201,8 @@ export default function SettingsRBAC({
                   <input
                     type="password"
                     required
-                    value={configs.midtransServerKey}
-                    onChange={(e) => setConfigs({ ...configs, midtransServerKey: e.target.value })}
+                    value={configs.artoPaySecretKey}
+                    onChange={(e) => setConfigs({ ...configs, artoPaySecretKey: e.target.value })}
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-amber-500 text-white"
                   />
                 </div>

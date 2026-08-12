@@ -1404,7 +1404,7 @@ export default function TaxiView() {
                   </div>
                 )}
 
-                {/* Confirm Options (Midtrans vs WhatsApp) */}
+                {/* Confirm Options (ArtoPay vs WhatsApp) */}
                 <div className="space-y-2.5 pt-2">
                   <button
                     onClick={handleWhatsAppConfirm}

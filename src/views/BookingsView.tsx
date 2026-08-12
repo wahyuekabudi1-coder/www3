@@ -123,11 +123,31 @@ export default function BookingsView() {
         orderId: booking.id,
         amount: booking.totalPriceIDR,
         currency: 'IDR',
-        onSuccess: (res) => {
-          updateBookingPaymentStatus(booking.id, 'Paid');
+        onSuccess: async (res) => {
+          try {
+            const check = await fetch(`/api/orders/${booking.id}/payment-status`);
+            if (check.ok) {
+              const data = await check.json();
+              if (data.found && data.paymentStatus === 'Paid') {
+                updateBookingPaymentStatus(booking.id, 'Paid');
+              }
+            }
+          } catch (e) {
+            console.warn('Status sync error:', e);
+          }
         },
-        onPending: (res) => {
-          updateBookingPaymentStatus(booking.id, 'Pending');
+        onPending: async (res) => {
+          try {
+            const check = await fetch(`/api/orders/${booking.id}/payment-status`);
+            if (check.ok) {
+              const data = await check.json();
+              if (data.found) {
+                updateBookingPaymentStatus(booking.id, data.paymentStatus || 'Pending');
+              }
+            }
+          } catch (e) {
+            console.warn('Status sync error:', e);
+          }
         },
         onError: (err) => {
           console.warn('ArtoPay checkout error/cancelled:', err);
